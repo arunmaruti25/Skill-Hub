@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /pages/dashboard.html
+Disallow: /pages/profile.html
+Disallow: /pages/admin.html
+Disallow: /pages/chat.html
+Disallow: /pages/messages.html
+Disallow: /pages/notifications.html
+Disallow: /pages/requests.html
+
+Sitemap: https://skill-hub-green.vercel.app/sitemap.xml
