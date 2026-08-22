@@ -179,13 +179,7 @@ async function saveProfile() {
         const data = await res.json();
         if (res.ok) {
             localStorage.setItem("user", JSON.stringify({ id: data.user._id, name: data.user.name, email: data.user.email }));
-            const setTitle = document.getElementById("profileTitle");
-            if (setTitle) setTitle.textContent = data.user.name;
-            const setProf = document.getElementById("profileProfession");
-            if (setProf) setProf.textContent = data.user.profession || "";
-            const avatar = document.getElementById("profileAvatar");
-            if (avatar && !data.user.profileImage) avatar.textContent = data.user.name.charAt(0).toUpperCase();
-            alert("Profile saved successfully!");
+            window.location.href = "dashboard.html";
         } else {
             alert(data.message || "Failed to save profile");
         }
