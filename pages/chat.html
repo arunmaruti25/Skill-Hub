@@ -109,7 +109,7 @@ async function loadOtherUser() {
         otherUser = await res.json();
         chatUserName.textContent = otherUser.name;
         chatAvatar.innerHTML = otherUser.profileImage
-            ? `<img src="${API_BASE_URL}${otherUser.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+            ? `<img src="${API_BASE_URL}${otherUser.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${(otherUser.name||'U').charAt(0).toUpperCase()}'"`+ `>`
             : (otherUser.name || "U").charAt(0).toUpperCase();
         loadMessages();
     } catch {

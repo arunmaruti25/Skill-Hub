@@ -82,7 +82,7 @@ async function loadProfile() {
             </div>
         ` : "";
 
-        const avatar = user.profileImage ? `<img src="${API_BASE_URL}${user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : letter;
+        const avatar = user.profileImage ? `<img src="${API_BASE_URL}${user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${letter}'">` : letter;
 
         container.innerHTML = `
             <div style="text-align:center; padding:20px;">

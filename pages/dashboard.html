@@ -97,7 +97,7 @@ async function loadDashboard() {
         document.getElementById("userName").textContent = name;
         document.getElementById("profileName").textContent = name;
 
-        const imgHtml = data.user.profileImage ? `<img src="${API_BASE_URL}${data.user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : letter;
+        const imgHtml = data.user.profileImage ? `<img src="${API_BASE_URL}${data.user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${letter}'">` : letter;
         document.getElementById("userAvatar").innerHTML = imgHtml;
         document.getElementById("profileAvatar").innerHTML = imgHtml;
         document.getElementById("profileBioPreview").textContent = data.user.bio || "No bio added yet";
@@ -136,7 +136,7 @@ async function loadDashboard() {
             } else {
                 peopleContainer.innerHTML = data.teammates.map(p => {
                     const pName = p.name || "User";
-                    const pAvatar = p.profileImage ? `<img src="${API_BASE_URL}${p.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : pName[0].toUpperCase();
+                    const pAvatar = p.profileImage ? `<img src="${API_BASE_URL}${p.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${pName[0].toUpperCase()}'">` : pName[0].toUpperCase();
                     const pSkills = p.skills?.length ? p.skills.slice(0, 2).map(s => `<span>${s}</span>`).join("") : "<span>No skills added</span>";
                     return `
                         <div class="person">
