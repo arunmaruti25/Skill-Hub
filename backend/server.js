@@ -15,6 +15,7 @@ const Message = require("./models/Message");
 
 const app = express();
 const uploadDir = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, uploadDir),
     filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
@@ -685,11 +686,18 @@ app.get("/api/message-inbox/:userId", getInboxHandler);
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 5000;
+
+if (!process.env.MONGO_URI) {
+    console.error("FATAL: MONGO_URI environment variable is not set!");
+    process.exit(1);
+}
+
 mongoose.connect(process.env.MONGO_URI)
     .then(() => {
         console.log("MongoDB Atlas connected");
-        app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
     })
     .catch(error => {
         console.error("MongoDB connection failed:", error.message);
+        process.exit(1);
     });
