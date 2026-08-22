@@ -7,7 +7,7 @@ const cors = require("cors");
 const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
-const User = require("./models/User");
+const User = require("./models/user");
 const Project = require("./models/Project");
 const JoinRequest = require("./models/JoinRequest");
 const Notification = require("./models/Notification");
