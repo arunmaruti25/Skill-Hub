@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Teammates - Skill Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+
+<aside class="sidebar">
+    <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
+    <nav>
+        <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a href="teammates.html" class="active"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
+        <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
+        <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+        <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
+        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+</aside>
+
+<main class="dashboard">
+    <div class="page-head">
+        <div>
+            <h1>Find Teammates</h1>
+            <p>Find people with the skills you need.</p>
+        </div>
+    </div>
+
+    <div class="dashboard-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="searchInput" placeholder="Search by name or skill...">
+        <button onclick="filterUsers()">Search</button>
+    </div>
+
+    <div class="filters">
+        <select id="skillFilter" onchange="filterUsers()"><option value="">All Skills</option></select>
+        <select id="experienceFilter" onchange="filterUsers()">
+            <option value="">Experience</option>
+            <option>Beginner</option>
+            <option>Intermediate</option>
+            <option>Advanced</option>
+        </select>
+        <select id="availabilityFilter" onchange="filterUsers()">
+            <option value="">Availability</option>
+            <option>Available</option>
+            <option>Part-time</option>
+            <option>Weekends</option>
+        </select>
+    </div>
+
+    <h2 class="results-title">Recommended Teammates</h2>
+    <div class="people" id="usersContainer"><p>Loading teammates...</p></div>
+</main>
+
+<script src="../js/app.js"></script>
+<script>
+let allUsers = [];
+const container = document.getElementById("usersContainer");
+const searchInput = document.getElementById("searchInput");
+const skillFilter = document.getElementById("skillFilter");
+const experienceFilter = document.getElementById("experienceFilter");
+const availabilityFilter = document.getElementById("availabilityFilter");
+
+async function loadUsers() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/users`);
+        if (!res.ok) throw new Error("Could not load users");
+        allUsers = await res.json();
+        createSkillOptions();
+        displayUsers(allUsers);
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = "<p>Cannot connect to the server.</p>";
+    }
+}
+
+function createSkillOptions() {
+    const skills = [...new Set(allUsers.flatMap(u => u.skills || []))].sort();
+    skills.forEach(skill => {
+        const option = document.createElement("option");
+        option.value = skill;
+        option.textContent = skill;
+        skillFilter.appendChild(option);
+    });
+}
+
+function displayUsers(users) {
+    container.innerHTML = "";
+    if (!users.length) {
+        container.innerHTML = `
+            <div class="person">
+                <i class="fa-solid fa-user-slash" style="font-size:30px;"></i>
+                <h3>No teammates found</h3>
+                <p>Try a different search or filter.</p>
+            </div>
+        `;
+        return;
+    }
+
+    users.forEach(user => {
+        const card = document.createElement("div");
+        card.className = "person";
+        const letter = user.name?.charAt(0).toUpperCase() || "U";
+        const skills = user.skills?.length ? user.skills.map(s => `<span>${s}</span>`).join("") : "<span>No skills added</span>";
+        const avatar = user.profileImage ? `<img src="${API_BASE_URL}${user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : letter;
+
+        card.innerHTML = `
+            <div class="avatar">${avatar}</div>
+            <h3>${user.name}</h3>
+            <p>${user.bio || "Skill Hub Member"}</p>
+            <div class="tags">${skills}</div>
+            <p><strong>Experience:</strong> ${user.experience || "Beginner"}</p>
+            <p><strong>Availability:</strong> ${user.availability || "Available"}</p>
+            ${user.location ? `<p><i class="fa-solid fa-location-dot"></i> ${user.location}</p>` : ""}
+            <button onclick="viewProfile('${user._id}')">View Profile</button>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function filterUsers() {
+    const search = searchInput.value.toLowerCase().trim();
+    const skill = skillFilter.value.toLowerCase();
+    const experience = experienceFilter.value;
+    const availability = availabilityFilter.value;
+
+    const filtered = allUsers.filter(user => {
+        const name = (user.name || "").toLowerCase();
+        const bio = (user.bio || "").toLowerCase();
+        const skills = (user.skills || []).map(s => s.toLowerCase());
+
+        const searchMatch = !search || name.includes(search) || bio.includes(search) || skills.some(s => s.includes(search));
+        const skillMatch = !skill || skills.includes(skill);
+        const expMatch = !experience || user.experience === experience;
+        const availMatch = !availability || user.availability === availability;
+
+        return searchMatch && skillMatch && expMatch && availMatch;
+    });
+
+    displayUsers(filtered);
+}
+
+function viewProfile(id) {
+    window.location.href = "user-profile.html?id=" + id;
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+const searchValue = urlParams.get("search");
+if (searchValue) searchInput.value = searchValue;
+
+loadUsers().then(() => {
+    if (searchValue) filterUsers();
+});
+</script>
+</body>
+</html>

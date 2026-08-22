@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Skill Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+
+<aside class="sidebar">
+    <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
+    <nav>
+        <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a href="teammates.html" class="active"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
+        <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
+        <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+        <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
+        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+</aside>
+
+<main class="dashboard">
+    <div class="page-head">
+        <div>
+            <h1>User Profile</h1>
+            <p>View teammate information and skills.</p>
+        </div>
+        <button class="outline-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Back to Teammates</button>
+    </div>
+
+    <section class="dash-card" id="profileContainer"><p>Loading profile...</p></section>
+
+    <section class="dash-card" id="inviteBox" style="display:none; margin-top:20px;">
+        <h2>Invite to Project</h2>
+        <p>Select one of your projects to invite this teammate.</p>
+        <select id="projectSelect" style="width:100%; padding:12px; margin:15px 0; border-radius:8px; border:1px solid #ccc;">
+            <option value="">Select a project</option>
+        </select>
+        <button class="primary-btn" onclick="sendInvitation()"><i class="fa-solid fa-user-plus"></i> Send Invitation</button>
+        <button class="outline-btn" onclick="closeInvite()" style="margin-left:10px;">Cancel</button>
+    </section>
+</main>
+
+<script src="../js/app.js"></script>
+<script>
+const userId = new URLSearchParams(location.search).get("id");
+const loggedInUser = JSON.parse(localStorage.getItem("user"));
+const container = document.getElementById("profileContainer");
+const inviteBox = document.getElementById("inviteBox");
+const projectSelect = document.getElementById("projectSelect");
+
+async function loadProfile() {
+    if (!userId) {
+        container.innerHTML = "<h2>User not found</h2>";
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/profile/` + userId);
+        const user = await res.json();
+        if (!res.ok) {
+            container.innerHTML = "<h2>User not found</h2>";
+            return;
+        }
+
+        const letter = (user.name || "U").charAt(0).toUpperCase();
+        const skills = user.skills?.length ? user.skills.map(s => `<span>${s}</span>`).join("") : "<span>No skills added</span>";
+        const social = `
+            ${user.github ? `<a href="${user.github}" target="_blank" class="outline-btn"><i class="fa-brands fa-github"></i> GitHub</a>` : ""}
+            ${user.linkedin ? `<a href="${user.linkedin}" target="_blank" class="outline-btn"><i class="fa-brands fa-linkedin"></i> LinkedIn</a>` : ""}
+        `;
+
+        const actions = loggedInUser?.id && loggedInUser.id.toString() !== userId.toString() ? `
+            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px;">
+                <button class="primary-btn" onclick="openChat()"><i class="fa-solid fa-message"></i> Message</button>
+                <button class="outline-btn" onclick="openInvite()"><i class="fa-solid fa-user-plus"></i> Invite to Project</button>
+            </div>
+        ` : "";
+
+        const avatar = user.profileImage ? `<img src="${API_BASE_URL}${user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">` : letter;
+
+        container.innerHTML = `
+            <div style="text-align:center; padding:20px;">
+                <div class="big-avatar" style="margin:auto;display:flex;align-items:center;justify-content:center;">${avatar}</div>
+                <h2 style="margin-top:15px;">${user.name}</h2>
+                ${user.location ? `<p><i class="fa-solid fa-location-dot"></i> ${user.location}</p>` : ""}
+                ${actions}
+            </div>
+            <div style="margin-top:20px;">
+                <h2>About</h2>
+                <p>${user.bio || "This user has not added a bio yet."}</p>
+            </div>
+            <div style="margin-top:30px;">
+                <h2>Skills</h2>
+                <div class="tags">${skills}</div>
+            </div>
+            <div style="margin-top:30px;">
+                <h2>Experience & Availability</h2>
+                <div class="form-grid" style="margin-top:15px;">
+                    <div><strong>Experience</strong><p>${user.experience || "Beginner"}</p></div>
+                    <div><strong>Availability</strong><p>${user.availability || "Available"}</p></div>
+                </div>
+            </div>
+            <div style="margin-top:30px;">
+                <h2>Social Links</h2>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
+                    ${social || "<p>No social links added.</p>"}
+                </div>
+            </div>
+        `;
+    } catch {
+        container.innerHTML = "<h2>Cannot connect to server</h2><p>Make sure the backend is running.</p>";
+    }
+}
+
+function openChat() { location.href = "chat.html?user=" + userId; }
+
+async function openInvite() {
+    inviteBox.style.display = "block";
+    await loadMyProjects();
+    inviteBox.scrollIntoView({ behavior: "smooth" });
+}
+
+function closeInvite() { inviteBox.style.display = "none"; }
+
+async function loadMyProjects() {
+    projectSelect.innerHTML = "<option>Loading projects...</option>";
+    if (!loggedInUser?.id) return;
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/projects`);
+        const projects = await res.json();
+        const myProjects = projects.filter(p => (p.owner?._id || p.owner)?.toString() === loggedInUser.id.toString());
+
+        if (!myProjects.length) {
+            projectSelect.innerHTML = "<option>You don't own any projects</option>";
+            return;
+        }
+
+        projectSelect.innerHTML = "<option value=''>Select a project</option>";
+        myProjects.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p._id;
+            opt.textContent = p.title;
+            projectSelect.appendChild(opt);
+        });
+    } catch {
+        projectSelect.innerHTML = "<option>Could not load projects</option>";
+    }
+}
+
+async function sendInvitation() {
+    const projectId = projectSelect.value;
+    if (!projectId) return alert("Please select a project.");
+    if (!loggedInUser?.id) return alert("Please login first.");
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/invite`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ inviter: loggedInUser.id, invitee: userId })
+        });
+        const result = await res.json();
+        if (!res.ok) return alert(result.message || "Could not send invitation.");
+        alert("Invitation sent successfully!");
+        closeInvite();
+    } catch {
+        alert("Cannot connect to the server.");
+    }
+}
+
+function goBack() { location.href = "teammates.html"; }
+
+loadProfile();
+</script>
+</body>
+</html>

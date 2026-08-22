@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects - Skill Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+
+<aside class="sidebar">
+    <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
+    <nav>
+        <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
+        <a href="projects.html" class="active"><i class="fa-solid fa-folder"></i> Projects</a>
+        <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+        <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
+        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+</aside>
+
+<main class="dashboard">
+    <div class="page-head">
+        <div>
+            <h1>Projects</h1>
+            <p>Discover projects and collaborate with others.</p>
+        </div>
+        <button class="primary-btn" onclick="showCreateProject()"><i class="fa-solid fa-plus"></i> Create Project</button>
+    </div>
+
+    <!-- CREATE PROJECT MODAL / BOX -->
+    <section class="dash-card" id="createProjectBox" style="display:none;">
+        <h2>Create New Project</h2>
+        <br>
+        <label>Project Title</label>
+        <input type="text" id="projectTitle" placeholder="Enter project title"><br><br>
+        <label>Description</label>
+        <textarea id="projectDescription" placeholder="Describe your project..."></textarea><br><br>
+        <label>Skills</label>
+        <input type="text" id="projectSkills" placeholder="Example: React, Node.js, MongoDB"><br><br>
+        <button class="primary-btn" onclick="createProject()">Create Project</button>
+        <button class="outline-btn" onclick="hideCreateProject()">Cancel</button>
+    </section>
+
+    <!-- SEARCH -->
+    <div class="dashboard-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="projectSearch" placeholder="Search projects or skills...">
+        <button onclick="searchProjects()">Search</button>
+    </div>
+
+    <h2 class="results-title">Projects</h2>
+    <div class="people" id="projectsContainer"><p>Loading projects...</p></div>
+</main>
+
+<script src="../js/app.js"></script>
+<script>
+let allProjects = [];
+
+async function loadProjects() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/projects`);
+        const projects = await res.json();
+        if (!res.ok) return alert(projects.message || "Could not load projects");
+        allProjects = projects;
+        displayProjects(allProjects);
+    } catch {
+        document.getElementById("projectsContainer").innerHTML = "<p>Cannot connect to the server.</p>";
+    }
+}
+
+function displayProjects(projects) {
+    const container = document.getElementById("projectsContainer");
+    container.innerHTML = "";
+    if (!projects.length) {
+        container.innerHTML = "<p>No projects found.</p>";
+        return;
+    }
+
+    projects.forEach(project => {
+        const card = document.createElement("div");
+        card.className = "person project-card";
+        const skillHTML = (project.skills || []).map(s => `<span>${s}</span>`).join("");
+        const ownerName = project.owner?.name || "Unknown";
+
+        card.innerHTML = `
+            <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+            <h3>${project.title}</h3>
+            <p>${project.description}</p>
+            <div class="tags">${skillHTML}</div>
+            <p><strong>Owner:</strong> ${ownerName}</p>
+            <button onclick="viewProject('${project._id}')">View Project</button>
+        `;
+        container.appendChild(card);
+    });
+}
+
+async function createProject() {
+    const title = document.getElementById("projectTitle").value.trim();
+    const description = document.getElementById("projectDescription").value.trim();
+    const skillsText = document.getElementById("projectSkills").value.trim();
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user?.id) return alert("Please login first.");
+    if (!title || !description) return alert("Please enter title and description.");
+
+    const skills = skillsText ? skillsText.split(",").map(s => s.trim()).filter(Boolean) : [];
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/projects`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, description, owner: user.id, skills })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert("Project created successfully!");
+            document.getElementById("projectTitle").value = "";
+            document.getElementById("projectDescription").value = "";
+            document.getElementById("projectSkills").value = "";
+            hideCreateProject();
+            loadProjects();
+        } else {
+            alert(data.message || "Failed to create project");
+        }
+    } catch {
+        alert("Cannot connect to the server.");
+    }
+}
+
+function showCreateProject() { document.getElementById("createProjectBox").style.display = "block"; }
+function hideCreateProject() { document.getElementById("createProjectBox").style.display = "none"; }
+
+function searchProjects() {
+    const search = document.getElementById("projectSearch").value.toLowerCase().trim();
+    if (!search) return displayProjects(allProjects);
+
+    const filtered = allProjects.filter(p => {
+        const title = (p.title || "").toLowerCase();
+        const desc = (p.description || "").toLowerCase();
+        const skills = (p.skills || []).join(" ").toLowerCase();
+        return title.includes(search) || desc.includes(search) || skills.includes(search);
+    });
+    displayProjects(filtered);
+}
+
+function viewProject(id) { window.location.href = "project-details.html?id=" + id; }
+
+loadProjects();
+</script>
+</body>
+</html>

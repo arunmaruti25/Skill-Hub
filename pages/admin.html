@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Skill Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        .admin-table-container { overflow-x: auto; margin-top: 15px; }
+        .admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        .admin-table th { background: rgba(78, 142, 162, 0.25); color: var(--c-mist); padding: 12px 14px; font-weight: 700; border-bottom: 1.5px solid var(--border); }
+        .admin-table td { padding: 12px 14px; border-bottom: 1px solid rgba(73, 118, 159, 0.2); color: var(--white); vertical-align: middle; }
+        .admin-table tr:hover { background: rgba(10, 65, 116, 0.5); }
+        .role-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; }
+        .role-badge.admin { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); }
+        .role-badge.user { background: rgba(123, 189, 232, 0.2); color: var(--c-sky); border: 1px solid rgba(123, 189, 232, 0.35); }
+        .btn-delete { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); padding: 6px 12px; border-radius: 8px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+        .btn-delete:hover { background: #ef4444; color: white; transform: translateY(-1px); }
+    </style>
+</head>
+<body>
+
+<aside class="sidebar">
+    <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
+    <nav>
+        <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
+        <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
+        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests</a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="messages.html"><i class="fa-solid fa-message"></i> Messages</a>
+        <a href="admin.html" class="active"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
+    </nav>
+    <div class="sidebar-bottom">
+        <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
+        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+</aside>
+
+<main class="dashboard">
+    <div class="page-head">
+        <div>
+            <h1><i class="fa-solid fa-shield-halved" style="color:var(--c-sky); margin-right:8px;"></i> Admin Control Center</h1>
+            <p>Manage users, monitor platform activity, and moderate projects.</p>
+        </div>
+    </div>
+
+    <!-- PLATFORM METRICS -->
+    <div class="stats" style="grid-template-columns: repeat(4, 1fr);">
+        <div><i class="fa-solid fa-users"></i><strong id="statUsers">0</strong><span>Total Users</span></div>
+        <div><i class="fa-solid fa-folder"></i><strong id="statProjects">0</strong><span>Total Projects</span></div>
+        <div><i class="fa-solid fa-paper-plane"></i><strong id="statRequests">0</strong><span>Join Requests</span></div>
+        <div><i class="fa-solid fa-comments"></i><strong id="statMessages">0</strong><span>Total Messages</span></div>
+    </div>
+
+    <!-- USER MANAGEMENT -->
+    <section class="dash-card">
+        <div class="card-title">
+            <h2>Registered Users</h2>
+            <span id="userCountText" style="color:var(--c-slate); font-size:12px;">Loading...</span>
+        </div>
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Skills</th>
+                        <th>Joined</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                    <tr><td colspan="6" style="text-align:center;">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- PROJECT MANAGEMENT -->
+    <section class="dash-card">
+        <div class="card-title">
+            <h2>Active Projects</h2>
+            <span id="projectCountText" style="color:var(--c-slate); font-size:12px;">Loading...</span>
+        </div>
+        <div class="admin-table-container">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Project Title</th>
+                        <th>Owner</th>
+                        <th>Required Skills</th>
+                        <th>Members</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="projectsTableBody">
+                    <tr><td colspan="6" style="text-align:center;">Loading projects...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
+<script src="../js/app.js"></script>
+<script>
+const loggedInUser = JSON.parse(localStorage.getItem("user"));
+
+// Admin access security check
+if (!loggedInUser || loggedInUser.role !== "admin") {
+    alert("⛔ Access Denied: This page is restricted to administrators only.");
+    window.location.href = "dashboard.html";
+}
+
+async function loadAdminData() {
+    try {
+        // 1. Stats
+        const statsRes = await fetch(`${API_BASE_URL}/api/admin/stats`);
+        if (statsRes.ok) {
+            const stats = await statsRes.json();
+            document.getElementById("statUsers").textContent = stats.totalUsers || 0;
+            document.getElementById("statProjects").textContent = stats.totalProjects || 0;
+            document.getElementById("statRequests").textContent = stats.totalRequests || 0;
+            document.getElementById("statMessages").textContent = stats.totalMessages || 0;
+        }
+
+        // 2. Users Table
+        const usersRes = await fetch(`${API_BASE_URL}/api/admin/users`);
+        if (usersRes.ok) {
+            const users = await usersRes.json();
+            document.getElementById("userCountText").textContent = `${users.length} user(s)`;
+            const tbody = document.getElementById("usersTableBody");
+            tbody.innerHTML = users.map(u => {
+                const isCurrentAdmin = u._id.toString() === loggedInUser.id.toString();
+                const skills = (u.skills || []).slice(0, 3).join(", ") || "None";
+                const roleBadge = `<span class="role-badge ${u.role || 'user'}">${u.role || 'user'}</span>`;
+                const deleteBtn = isCurrentAdmin ? '<span style="color:var(--c-slate);font-size:11px;">(You)</span>' : `<button class="btn-delete" onclick="deleteUser('${u._id}', '${u.name}')"><i class="fa-solid fa-trash"></i> Delete</button>`;
+                return `
+                    <tr>
+                        <td><strong>${u.name}</strong></td>
+                        <td>${u.email}</td>
+                        <td>${roleBadge}</td>
+                        <td>${skills}</td>
+                        <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+                        <td>${deleteBtn}</td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        // 3. Projects Table
+        const projRes = await fetch(`${API_BASE_URL}/api/projects`);
+        if (projRes.ok) {
+            const projects = await projRes.json();
+            document.getElementById("projectCountText").textContent = `${projects.length} project(s)`;
+            const tbody = document.getElementById("projectsTableBody");
+            tbody.innerHTML = projects.map(p => `
+                <tr>
+                    <td><strong>${p.title}</strong></td>
+                    <td>${p.owner?.name || "Unknown"}</td>
+                    <td>${(p.skills || []).join(", ") || "None"}</td>
+                    <td>${p.members?.length || 1}</td>
+                    <td>${new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td><button class="btn-delete" onclick="deleteProject('${p._id}', '${p.title}')"><i class="fa-solid fa-trash"></i> Delete</button></td>
+                </tr>
+            `).join("");
+        }
+    } catch (err) {
+        console.error("Admin load error:", err);
+    }
+}
+
+async function deleteUser(id, name) {
+    if (!confirm(`⚠️ Are you sure you want to permanently delete user "${name}" and all their projects/messages?`)) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/users/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        alert(data.message || "User deleted");
+        loadAdminData();
+    } catch {
+        alert("Could not delete user.");
+    }
+}
+
+async function deleteProject(id, title) {
+    if (!confirm(`⚠️ Are you sure you want to delete project "${title}"?`)) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/admin/projects/${id}`, { method: "DELETE" });
+        const data = await res.json();
+        alert(data.message || "Project deleted");
+        loadAdminData();
+    } catch {
+        alert("Could not delete project.");
+    }
+}
+
+loadAdminData();
+</script>
+</body>
+</html>
