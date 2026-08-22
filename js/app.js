@@ -1,7 +1,7 @@
 // ================= CONFIGURATION =================
 const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://127.0.0.1:5000"
-    : "http://127.0.0.1:5000"; // Replace with your live backend URL on Render/Railway when deployed
+    : "https://skill-hub-backend-4w35.onrender.com"; // Replace with your live backend URL on Render/Railway when deployed
 
 // ================= AUTH (REGISTER & LOGIN) =================
 const registerForm = document.getElementById("registerForm");
