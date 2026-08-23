@@ -17,6 +17,10 @@
         <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
         <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
         <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+        <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Admin Panel</span>
+        </a>
     </nav>
     <div class="sidebar-bottom">
         <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
@@ -48,6 +52,7 @@
 
 <script src="../js/auth.js"></script>
 <script>
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" ? "http://127.0.0.1:5000" : "https://skill-hub-backend-4w35.onrender.com";
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     if (!token) return window.location.href = 'login.html';
@@ -60,7 +65,7 @@ function logout() { localStorage.clear(); window.location.href = '../index.html'
 async function loadTeammates() {
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch('/api/users/teammates', { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE_URL}/api/users`, { headers: { 'Authorization': `Bearer ${token}` } });
         const teammates = await res.json();
         renderTeammates(teammates);
     } catch (err) {
@@ -117,6 +122,12 @@ function filterTeammates() {
 
 function viewProfile(userId) {
     window.location.href = `user-profile.html?id=${userId}`;
+}
+
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+const adminLink = document.getElementById('adminNavLink');
+if (adminLink && (user.role === 'admin' || user.isAdmin)) {
+    adminLink.style.display = 'flex';
 }
 </script>
 </body>

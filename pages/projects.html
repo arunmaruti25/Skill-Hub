@@ -17,6 +17,10 @@
         <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
         <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
         <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+        <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Admin Panel</span>
+        </a>
     </nav>
     <div class="sidebar-bottom">
         <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
@@ -84,6 +88,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function logout() { localStorage.clear(); window.location.href = '../index.html'; function showCreateProject() { document.getElementById('createProjectModal').style.display = 'flex'; } function closeCreateProject() { document.getElementById('createProjectModal').style.display = 'none'; }
+
+const user = JSON.parse(localStorage.getItem('user') || '{}');
+const adminLink = document.getElementById('adminNavLink');
+if (adminLink && (user.role === 'admin' || user.isAdmin)) {
+    adminLink.style.display = 'flex';
+}
 
 async function loadProjects() {
     const token = localStorage.getItem('token');
