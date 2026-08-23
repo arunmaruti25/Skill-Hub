@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body>
-
 <aside class="sidebar">
     <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
     <nav>
@@ -34,97 +33,135 @@
         <button class="primary-btn" onclick="saveProfile()">Save Profile</button>
     </div>
 
-    <!-- PROFILE HEADER -->
     <section class="dash-card profile-header">
+        <div class="big-avatar" id="profileAvatar">JD</div>
         <div>
-            <div class="big-avatar" id="profileAvatar">U</div>
-            <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center; flex-wrap: wrap;">
-                <label for="profileImageInput" class="primary-btn" style="padding: 7px 14px; font-size: 11.5px; cursor: pointer; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); box-shadow: none;">
-                    <i class="fa-solid fa-camera"></i> Change Photo
-                </label>
-                <input type="file" id="profileImageInput" accept="image/*" style="display: none;">
-                <button type="button" id="removeImageBtn" onclick="removeProfileImage()" class="outline-btn" style="padding: 7px 14px; font-size: 11.5px; display: none; background: rgba(239,68,68,0.2); color: #fca5a5; border-color: rgba(239,68,68,0.5);">
-                    <i class="fa-solid fa-trash-can"></i> Remove Photo
-                </button>
-            </div>
-        </div>
-        <div>
-            <h2 id="profileTitle">User</h2>
-            <p id="profileProfession"></p>
-            <small id="profileLocation">India</small>
+            <h2 id="profileName">John Doe</h2>
+            <p id="profileRole">Full Stack Developer</p>
+            <small>Member since <span id="joinDate">January 2024</span></small>
         </div>
     </section>
 
-    <!-- BASIC INFORMATION -->
     <section class="dash-card">
-        <h2>Basic Information</h2>
+        <h2>Personal Information</h2>
         <div class="form-grid">
-            <div>
-                <label>Full Name</label>
-                <input id="profileNameInput" type="text" placeholder="Enter your full name">
-            </div>
-            <div>
-                <label>Profession</label>
-                <input id="professionInput" type="text" placeholder="e.g. Python Developer">
-            </div>
-            <div>
-                <label>Location</label>
-                <input id="profileLocationInput" type="text" placeholder="City, Country">
-            </div>
-            <div class="full">
-                <label>Bio</label>
-                <textarea id="profileBioInput" placeholder="Tell others about yourself..."></textarea>
-            </div>
+            <label>Full Name</label>
+            <label>Email</label>
+            <input type="text" id="editName" placeholder="Your name">
+            <input type="email" id="editEmail" placeholder="your@email.com">
+            <label class="full">Bio</label>
+            <textarea id="editBio" class="full" placeholder="Tell others about yourself..." style="grid-column: 1 / -1;"></textarea>
         </div>
     </section>
 
-    <!-- SKILLS -->
     <section class="dash-card">
-        <h2>Skills</h2>
-        <p class="section-text">Add the skills you can contribute to projects.</p>
-        <div class="tags" id="profileSkills"></div>
-        <input id="skillInput" type="text" placeholder="Add another skill and press Enter...">
-    </section>
-
-    <!-- EXPERIENCE -->
-    <section class="dash-card">
-        <h2>Experience & Availability</h2>
-        <div class="form-grid">
-            <div>
-                <label>Experience</label>
-                <select id="experienceInput">
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                </select>
-            </div>
-            <div>
-                <label>Availability</label>
-                <select id="availabilityInput">
-                    <option value="Available">Available</option>
-                    <option value="Part-time">Part-time</option>
-                    <option value="Weekends">Weekends</option>
-                </select>
-            </div>
+        <div class="card-title"><h2>Skills</h2></div>
+        <div class="tags" id="skillsTags"></div>
+        <div style="display:flex;gap:10px;margin-top:15px;">
+            <input type="text" id="skillInput" placeholder="Add a skill" style="flex:1;">
+            <button class="primary-btn" onclick="addSkill()">Add</button>
         </div>
     </section>
 
-    <!-- SOCIAL LINKS -->
     <section class="dash-card">
-        <h2>Social Links</h2>
-        <div class="form-grid">
-            <div>
-                <label>GitHub</label>
-                <input id="githubInput" type="url" placeholder="GitHub profile">
-            </div>
-            <div>
-                <label>LinkedIn</label>
-                <input id="linkedinInput" type="url" placeholder="LinkedIn profile">
-            </div>
+        <h2>Your Projects</h2>
+        <div id="userProjects">
+            <p class="section-text">Loading...</p>
         </div>
     </section>
 </main>
 
-<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!token) return window.location.href = 'login.html';
+    loadProfile(user);
+});
+
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+function loadProfile(user) {
+    document.getElementById('profileName').textContent = user.name || 'User';
+    document.getElementById('profileRole').textContent = user.role || 'Developer';
+    document.getElementById('profileAvatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
+    document.getElementById('joinDate').textContent = new Date(user.createdAt).toLocaleDateString('en-US', {month:'long',year:'numeric'});
+    document.getElementById('editName').value = user.name || '';
+    document.getElementById('editEmail').value = user.email || '';
+    document.getElementById('editBio').value = user.bio || '';
+    
+    const skillsContainer = document.getElementById('skillsTags');
+    (user.skills || []).forEach(s => addSkillTag(s, skillsContainer));
+}
+
+function addSkillTag(skill, container) {
+    const span = document.createElement('span');
+    span.innerHTML = `${skill} <i class="fa-solid fa-xmark" onclick="removeSkill(this,'${skill}')" style="cursor:pointer;margin-left:4px;"></i>`;
+    container.appendChild(span);
+}
+
+function addSkill() {
+    const input = document.getElementById('skillInput');
+    const skill = input.value.trim();
+    if (!skill) return;
+    const container = document.getElementById('skillsTags');
+    if ([...container.children].some(c => c.textContent.includes(skill))) return;
+    addSkillTag(skill, container);
+    input.value = '';
+}
+
+function removeSkill(el, skill) {
+    el.parentElement.remove();
+}
+
+async function saveProfile() {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const skills = [...document.querySelectorAll('#skillsTags span')].map(s => s.textContent.replace('×','').trim());
+    
+    const data = {
+        name: document.getElementById('editName').value,
+        email: document.getElementById('editEmail').value,
+        bio: document.getElementById('editBio').value,
+        skills
+    };
+
+    try {
+        const res = await fetch(`/api/users/${user._id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) {
+            const updated = await res.json();
+            localStorage.setItem('user', JSON.stringify(updated));
+            alert('Profile saved!');
+            loadProfile(updated);
+        } else alert('Failed to save');
+    } catch (err) {
+        alert('Network error');
+    }
+}
+
+async function loadUserProjects() {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    try {
+        const res = await fetch(`/api/users/${user._id}/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const projects = await res.json();
+        document.getElementById('userProjects').innerHTML = projects.length ? projects.map(p => `
+            <div class="project">
+                <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+                <div><h3>${p.title}</h3><p>${p.description?.substring(0,80)}...</p></div>
+                <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
+            </div>
+        `).join('') : '<p class="section-text">No projects yet.</p>';
+    } catch (err) {
+        console.error('Load projects error:', err);
+    }
+}
+loadUserProjects();
+</script>
 </body>
 </html>

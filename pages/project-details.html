@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body>
-
 <aside class="sidebar">
     <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
     <nav>
@@ -35,91 +34,206 @@
     </div>
 
     <section class="dash-card">
-        <div class="project-icon"><i class="fa-solid fa-code"></i></div>
-        <h2 id="projectName">Loading...</h2>
-        <p id="projectDescription">Loading project description...</p>
-        <br>
-        <h3>Required Skills</h3>
-        <div class="tags" id="projectSkills"><span>Loading...</span></div>
-        <br>
-        <h3>Project Owner</h3>
-        <p id="projectOwner">Loading...</p>
-        <br>
-        <button class="primary-btn" id="joinButton" onclick="requestToJoin()">
-            <i class="fa-solid fa-user-plus"></i> Request to Join
-        </button>
+        <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
+            <div class="project-icon" style="width:80px;height:80px;min-width:80px;font-size:28px;"></div>
+            <div style="flex:1;min-width:250px;">
+                <h2 id="projectTitleDetail" style="color:#001D39;"></h2>
+                <p id="projectDescription" style="color:#2F4156;margin:10px 0;"></p>
+                <div class="tags" id="projectSkills"></div>
+            </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px;">
+            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
+                <div style="color:#2F4156;font-size:12px;font-weight:600;">Owner</div>
+                <div id="projectOwner" style="color:#001D39;font-weight:700;"></div>
+            </div>
+            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
+                <div style="color:#2F4156;font-size:12px;font-weight:600;">Members</div>
+                <div id="projectMembers" style="color:#001D39;font-weight:700;"></div>
+            </div>
+            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
+                <div style="color:#2F4156;font-size:12px;font-weight:600;">Created</div>
+                <div id="projectCreated" style="color:#001D39;font-weight:700;"></div>
+            </div>
+            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
+                <div style="color:#2F4156;font-size:12px;font-weight:600;">Status</div>
+                <div id="projectStatus" style="color:#001D39;font-weight:700;"></div>
+            </div>
+        </div>
+
+        <div id="projectActions" style="display:flex;gap:10px;"></div>
+    </section>
+
+    <section class="dash-card">
+        <h2>Team Members</h2>
+        <div id="teamMembers" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;">
+            <p class="section-text">Loading...</p>
+        </div>
+    </section>
+
+    <section class="dash-card">
+        <h2>Join Requests</h2>
+        <div id="joinRequests">
+            <p class="section-text">Loading...</p>
+        </div>
     </section>
 </main>
 
-<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
 <script>
-const params = new URLSearchParams(window.location.search);
-const projectId = params.get("id");
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectId = urlParams.get('id');
+    if (projectId) loadProject(projectId);
+});
 
-async function loadProject() {
-    if (!projectId) {
-        document.getElementById("projectTitle").textContent = "Project not found";
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+async function loadProject(projectId) {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    try {
+        const res = await fetch(`/api/projects/${projectId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const project = await res.json();
+        
+        document.getElementById('projectTitle').textContent = project.title;
+        document.getElementById('projectTitleDetail').textContent = project.title;
+        document.getElementById('projectDescription').textContent = project.description;
+        document.getElementById('projectOwner').textContent = project.owner?.name || 'Unknown';
+        document.getElementById('projectMembers').textContent = `${(project.members?.length || 1)} member(s)`;
+        document.getElementById('projectCreated').textContent = new Date(project.createdAt).toLocaleDateString();
+        document.getElementById('projectStatus').textContent = project.status || 'active';
+        
+        const skillsContainer = document.getElementById('projectSkills');
+        (project.skills || []).forEach(s => {
+            const span = document.createElement('span');
+            span.textContent = s;
+            skillsContainer.appendChild(span);
+        });
+
+        const isOwner = project.owner?._id === user._id;
+        const isMember = project.members?.some(m => m._id === user._id);
+        const actionsContainer = document.getElementById('projectActions');
+        
+        if (isOwner) {
+            actionsContainer.innerHTML = `
+                <button class="primary-btn" onclick="editProject('${project._id}')"><i class="fa-solid fa-edit"></i> Edit</button>
+                <button class="outline-btn" onclick="deleteProject('${project._id}')" style="color:var(--c-error);border-color:var(--c-error);"><i class="fa-solid fa-trash"></i> Delete</button>
+            `;
+        } else if (isMember) {
+            actionsContainer.innerHTML = `<button class="outline-btn" onclick="leaveProject('${project._id}')" style="color:var(--c-warning);border-color:var(--c-warning);"><i class="fa-solid fa-door-open"></i> Leave Project</button>`;
+        } else {
+            actionsContainer.innerHTML = `<button class="primary-btn" onclick="requestJoin('${project._id}')"><i class="fa-solid fa-paper-plane"></i> Request to Join</button>`;
+        }
+
+        loadTeamMembers(project);
+        loadJoinRequests(project);
+    } catch (err) {
+        console.error('Load project error:', err);
+    }
+}
+
+async function loadTeamMembers(project) {
+    const token = localStorage.getItem('token');
+    const members = project.members || [];
+    const allMembers = [project.owner, ...members].filter(Boolean);
+    
+    document.getElementById('teamMembers').innerHTML = allMembers.map(m => `
+        <div class="person" style="padding:15px;text-align:left;">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <div class="avatar" style="width:40px;height:40px;font-size:14px;">${m.name?.charAt(0) || 'U'}</div>
+                <div>
+                    <h3 style="color:#001D39;font-size:14px;">${m.name}</h3>
+                    <p style="color:#2F4156;font-size:12px;">${m._id === project.owner?._id ? 'Owner' : 'Member'}</p>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadJoinRequests(project) {
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    
+    if (project.owner?._id !== user._id) {
+        document.getElementById('joinRequests').innerHTML = '<p class="section-text">Only the project owner can view join requests.</p>';
         return;
     }
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/projects/` + projectId);
-        const project = await res.json();
-        if (!res.ok) return alert(project.message || "Project not found");
-
-        document.getElementById("projectTitle").textContent = project.title;
-        document.getElementById("projectName").textContent = project.title;
-        document.getElementById("projectDescription").textContent = project.description;
-        document.getElementById("projectOwner").textContent = project.owner?.name || "Unknown";
-
-        const skillsContainer = document.getElementById("projectSkills");
-        skillsContainer.innerHTML = "";
-        const skills = project.skills || [];
-        if (!skills.length) {
-            skillsContainer.innerHTML = "<span>No specific skills listed</span>";
-        } else {
-            skills.forEach(skill => {
-                const tag = document.createElement("span");
-                tag.textContent = skill;
-                skillsContainer.appendChild(tag);
-            });
+        const res = await fetch(`/api/projects/${project._id}/requests`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const requests = await res.json();
+        
+        if (!requests.length) {
+            document.getElementById('joinRequests').innerHTML = '<p class="section-text">No pending requests.</p>';
+            return;
         }
-    } catch {
-        alert("Cannot connect to the server.");
+
+        document.getElementById('joinRequests').innerHTML = requests.map(r => `
+            <div class="notification-card" style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                    <div class="project-name">${r.requester?.name || 'Unknown'}</div>
+                    <div class="requester-name">${r.requester?.email || ''}</div>
+                    <div class="tags" style="margin-top:8px;">${(r.requester?.skills || []).map(s => `<span>${s}</span>`).join('')}</div>
+                </div>
+                <div class="notification-actions">
+                    <button class="accept-btn" onclick="handleJoinRequest('${r._id}', 'accepted', '${project._id}')"><i class="fa-solid fa-check"></i> Accept</button>
+                    <button class="reject-btn" onclick="handleJoinRequest('${r._id}', 'rejected', '${project._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
+                </div>
+            </div>
+        `).join('');
+    } catch (err) {
+        console.error('Load join requests error:', err);
     }
 }
 
-async function requestToJoin() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (!user?.id) return alert("Please login first.");
-
-    const button = document.getElementById("joinButton");
-    button.disabled = true;
-    button.innerHTML = "Sending...";
-
+async function handleJoinRequest(requestId, action, projectId) {
+    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/request`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ requester: user.id })
+        await fetch(`/api/requests/${requestId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ status: action })
         });
-        const data = await res.json();
-        if (res.ok) {
-            alert("Join request sent successfully!");
-            button.innerHTML = '<i class="fa-solid fa-check"></i> Request Sent';
-        } else {
-            alert(data.message || "Could not send request");
-            button.disabled = false;
-            button.innerHTML = '<i class="fa-solid fa-user-plus"></i> Request to Join';
-        }
-    } catch {
-        alert("Cannot connect to the server.");
-        button.disabled = false;
-        button.innerHTML = '<i class="fa-solid fa-user-plus"></i> Request to Join';
-    }
+        loadProject(projectId);
+    } catch (err) { console.error('Handle request error:', err); }
 }
 
-loadProject();
+async function requestJoin(projectId) {
+    const token = localStorage.getItem('token');
+    try {
+        await fetch(`/api/projects/${projectId}/join`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        alert('Join request sent!');
+        loadProject(projectId);
+    } catch (err) { alert('Failed to send request'); }
+}
+
+async function leaveProject(projectId) {
+    if (!confirm('Leave this project?')) return;
+    const token = localStorage.getItem('token');
+    try {
+        await fetch(`/api/projects/${projectId}/leave`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+        window.location.href = 'projects.html';
+    } catch (err) { alert('Failed to leave project'); }
+}
+
+async function deleteProject(projectId) {
+    if (!confirm('Delete this project permanently?')) return;
+    const token = localStorage.getItem('token');
+    try {
+        await fetch(`/api/projects/${projectId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        window.location.href = 'projects.html';
+    } catch (err) { alert('Failed to delete project'); }
+}
+
+function editProject(projectId) {
+    window.location.href = `edit-project.html?id=${projectId}`;
+}
 </script>
 </body>
 </html>

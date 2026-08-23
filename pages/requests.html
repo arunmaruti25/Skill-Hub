@@ -7,21 +7,31 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        .sidebar-badge-link { display: flex !important; align-items: center; }
-        .sidebar-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
-        .request-card { border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 20px; margin-top: 15px; background: var(--card-bg); }
-        .request-card h3 { margin-bottom: 8px; color: var(--c-text-primary); }
-        .request-card p { margin: 7px 0; color: var(--c-text-secondary); }
-        .request-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .status { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
-        .status.pending { background: rgba(255, 166, 87, 0.2); color: var(--c-warning); }
-        .status.accepted { background: rgba(126, 231, 135, 0.2); color: var(--c-success); }
-        .status.rejected { background: rgba(255, 107, 107, 0.2); color: var(--c-error); }
-        .empty-request { text-align: center; padding: 35px; color: var(--c-text-muted); }
-    </style>
+:root {
+        --c-white:       #FFFFFF;
+        --c-bg-light:    #EAF6FF;
+        --c-border:      #C1E5FF;
+        --c-sky-mid:     #9CD5FF;
+        --c-blue-primary:#6AB0E3;
+        --c-text-dark:   #001D39;
+        --c-error: #ef4444;
+        --c-success: #22c55e;
+        --c-warning: #f59e0b;
+    }
+    .sidebar-badge-link { display: flex !important; align-items: center; }
+    .sidebar-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
+    .request-card { border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 20px; margin-top: 15px; background: var(--card-bg); }
+    .request-card h3 { margin-bottom: 8px; color: #001D39; }
+    .request-card p { margin: 7px 0; color: #2F4156; }
+    .request-actions { display: flex; gap: 10px; margin-top: 15px; }
+    .status { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; }
+    .status.pending { background: rgba(245,158,11,0.2); color: var(--c-warning); }
+    .status.accepted { background: rgba(34,197,94,0.2); color: var(--c-success); }
+    .status.rejected { background: rgba(239,68,68,0.2); color: var(--c-error); }
+    .empty-request { text-align: center; padding: 35px; color: #2F4156; }
+</style>
 </head>
 <body>
-
 <aside class="sidebar">
     <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
     <nav>
@@ -42,238 +52,112 @@
     <div class="page-head">
         <div>
             <h1>Requests</h1>
-            <p>Manage your project collaboration requests.</p>
+            <p>Manage your project join requests</p>
         </div>
     </div>
 
-    <section class="dash-card">
-        <h2>Requests Received</h2>
-        <p>People who want to join your projects.</p>
-        <div id="receivedRequests"><p>Loading requests...</p></div>
-    </section>
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="primary-btn" onclick="loadRequests('received')" id="tabReceived"><i class="fa-solid fa-inbox"></i> Received</button>
+        <button class="outline-btn" onclick="loadRequests('sent')" id="tabSent"><i class="fa-solid fa-paper-plane"></i> Sent</button>
+    </div>
 
-    <section class="dash-card">
-        <h2>Project Invitations</h2>
-        <p>Projects you've been invited to join.</p>
-        <div id="projectInvitations"><p>Loading invitations...</p></div>
-    </section>
-
-    <section class="dash-card">
-        <h2>Requests Sent</h2>
-        <p>Your requests to join projects.</p>
-        <div id="sentRequests"><p>Loading requests...</p></div>
-    </section>
+    <div id="requestsList">
+        <div class="empty-request">
+            <i class="fa-solid fa-inbox" style="font-size:48px;color:var(--c-border);margin-bottom:15px;"></i>
+            <h3>No requests</h3>
+            <p>Requests will appear here when teammates want to join your projects.</p>
+        </div>
+    </div>
 </main>
 
-<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
 <script>
-const user = JSON.parse(localStorage.getItem("user"));
-const receivedContainer = document.getElementById("receivedRequests");
-const sentContainer = document.getElementById("sentRequests");
-const invitationContainer = document.getElementById("projectInvitations");
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+    loadRequests('received');
+});
 
-async function loadReceivedRequests() {
-    if (!user?.id) {
-        receivedContainer.innerHTML = '<div class="empty-request"><h3>Please login first.</h3></div>';
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+let currentTab = 'received';
+
+async function loadRequests(type) {
+    currentTab = type;
+    const token = localStorage.getItem('token');
+    
+    document.getElementById('tabReceived').className = type === 'received' ? 'primary-btn' : 'outline-btn';
+    document.getElementById('tabSent').className = type === 'sent' ? 'primary-btn' : 'outline-btn';
+    
+    try {
+        const res = await fetch(`/api/requests?type=${type}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const requests = await res.json();
+        renderRequests(requests, type);
+    } catch (err) {
+        console.error('Load requests error:', err);
+    }
+}
+
+function renderRequests(requests, type) {
+    const container = document.getElementById('requestsList');
+    
+    if (!requests.length) {
+        container.innerHTML = `
+            <div class="empty-request">
+                <i class="fa-solid fa-inbox" style="font-size:48px;color:var(--c-border);margin-bottom:15px;"></i>
+                <h3>No ${type} requests</h3>
+                <p>${type === 'received' ? 'No one has requested to join your projects yet.' : 'You haven\'t sent any join requests yet.'}</p>
+            </div>
+        `;
         return;
     }
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/requests/received/` + user.id);
-        const requests = await res.json();
-        if (!res.ok) throw new Error();
 
-        receivedContainer.innerHTML = "";
-        updateRequestBadge(requests);
-
-        if (!requests.length) {
-            receivedContainer.innerHTML = `
-                <div class="empty-request">
-                    <i class="fa-solid fa-inbox" style="font-size:40px;"></i>
-                    <h3>No requests received</h3>
-                    <p>You're all caught up!</p>
+    container.innerHTML = requests.map(r => `
+        <div class="request-card">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div>
+                    <h3>${r.project?.title || 'Unknown Project'}</h3>
+                    <p><strong>${type === 'received' ? 'From' : 'To'}:</strong> ${r.requester?.name || r.recipient?.name || 'Unknown'}</p>
+                    <p><strong>Status:</strong> <span class="status ${r.status}">${r.status}</span></p>
+                    <p><strong>Date:</strong> ${new Date(r.createdAt).toLocaleDateString()}</p>
                 </div>
-            `;
-            return;
-        }
-
-        requests.forEach(req => {
-            const card = document.createElement("div");
-            card.className = "request-card";
-            const requester = req.requester ? req.requester.name : "Unknown User";
-            const email = req.requester?.email ? `<p><i class="fa-solid fa-envelope"></i> ${req.requester.email}</p>` : "";
-            const project = req.project ? req.project.title : "Unknown Project";
-            const status = req.status || "pending";
-
-            let actions = "";
-            if (status === "pending") {
-                actions = `
+                ${type === 'received' && r.status === 'pending' ? `
                     <div class="request-actions">
-                        <button class="primary-btn" onclick="acceptRequest('${req._id}')"><i class="fa-solid fa-check"></i> Accept</button>
-                        <button class="outline-btn" onclick="rejectRequest('${req._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
+                        <button class="accept-btn" onclick="handleRequest('${r._id}', 'accepted')"><i class="fa-solid fa-check"></i> Accept</button>
+                        <button class="reject-btn" onclick="handleRequest('${r._id}', 'rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
                     </div>
-                `;
-            }
+                ` : type === 'sent' && r.status === 'pending' ? `
+                    <div class="request-actions">
+                        <button class="outline-btn" onclick="cancelRequest('${r._id}')" style="color:var(--c-error);border-color:var(--c-error);"><i class="fa-solid fa-xmark"></i> Cancel</button>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+    `).join('');
+}
 
-            card.innerHTML = `
-                <h3>${requester}</h3>
-                ${email}
-                <p>Wants to join: <strong>${project}</strong></p>
-                <p>Status: <span class="status ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></p>
-                ${actions}
-            `;
-            receivedContainer.appendChild(card);
+async function handleRequest(id, action) {
+    const token = localStorage.getItem('token');
+    try {
+        await fetch(`/api/requests/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ status: action })
         });
-    } catch {
-        receivedContainer.innerHTML = '<div class="empty-request"><p>Cannot connect to the server.</p></div>';
+        loadRequests(currentTab);
+    } catch (err) {
+        console.error('Handle request error:', err);
     }
 }
 
-async function loadSentRequests() {
-    if (!user?.id) {
-        sentContainer.innerHTML = '<div class="empty-request"><h3>Please login first.</h3></div>';
-        return;
-    }
+async function cancelRequest(id) {
+    if (!confirm('Cancel this request?')) return;
+    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/requests/sent/` + user.id);
-        const requests = await res.json();
-        if (!res.ok) throw new Error();
-
-        sentContainer.innerHTML = "";
-        if (!requests.length) {
-            sentContainer.innerHTML = `
-                <div class="empty-request">
-                    <i class="fa-solid fa-paper-plane" style="font-size:40px;"></i>
-                    <h3>No requests sent</h3>
-                    <p>You haven't requested to join any projects yet.</p>
-                </div>
-            `;
-            return;
-        }
-
-        requests.forEach(req => {
-            const card = document.createElement("div");
-            card.className = "request-card";
-            const project = req.project ? req.project.title : "Unknown Project";
-            const status = req.status || "pending";
-            card.innerHTML = `
-                <h3>${project}</h3>
-                <p>Join request</p>
-                <p>Status: <span class="status ${status}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></p>
-            `;
-            sentContainer.appendChild(card);
-        });
-    } catch {
-        sentContainer.innerHTML = '<div class="empty-request"><p>Cannot connect to the server.</p></div>';
-    }
+        await fetch(`/api/requests/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        loadRequests(currentTab);
+    } catch (err) { alert('Failed to cancel request'); }
 }
-
-async function loadInvitations() {
-    if (!user?.id) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/notifications/` + user.id);
-        const notifs = await res.json();
-        if (!res.ok) throw new Error();
-
-        const invitations = notifs.filter(n => n.type === "project_invite" && !n.read);
-        invitationContainer.innerHTML = "";
-
-        if (!invitations.length) {
-            invitationContainer.innerHTML = `
-                <div class="empty-request">
-                    <i class="fa-solid fa-envelope-open" style="font-size:40px;"></i>
-                    <h3>No project invitations</h3>
-                    <p>You don't have any pending invitations.</p>
-                </div>
-            `;
-            return;
-        }
-
-        invitations.forEach(inv => {
-            const card = document.createElement("div");
-            card.className = "request-card";
-            const project = inv.project ? inv.project.title : "Unknown Project";
-            card.innerHTML = `
-                <h3>Project Invitation</h3>
-                <p>${inv.message}</p>
-                <p>Project: <strong>${project}</strong></p>
-                <div class="request-actions">
-                    <button class="primary-btn" onclick="acceptInvitation('${inv._id}')"><i class="fa-solid fa-check"></i> Accept Invitation</button>
-                    <button class="outline-btn" onclick="rejectInvitation('${inv._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
-                </div>
-            `;
-            invitationContainer.appendChild(card);
-        });
-    } catch {
-        invitationContainer.innerHTML = '<div class="empty-request"><p>Cannot connect to the server.</p></div>';
-    }
-}
-
-function updateRequestBadge(requests) {
-    const pendingCount = requests.filter(r => r.status === "pending").length;
-    const badge = document.getElementById("requestBadge");
-    if (!badge) return;
-    badge.textContent = pendingCount;
-    badge.style.display = pendingCount > 0 ? "flex" : "none";
-}
-
-async function acceptRequest(id) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/requests/${id}/accept`, { method: "PUT" });
-        const data = await res.json();
-        if (!res.ok) return alert(data.message || "Could not accept request.");
-        alert("Request accepted!");
-        loadReceivedRequests();
-        loadSentRequests();
-        updateSidebarBadges();
-    } catch {
-        alert("Cannot connect to the server.");
-    }
-}
-
-async function rejectRequest(id) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/requests/${id}/reject`, { method: "PUT" });
-        const data = await res.json();
-        if (!res.ok) return alert(data.message || "Could not reject request.");
-        alert("Request rejected.");
-        loadReceivedRequests();
-        loadSentRequests();
-        updateSidebarBadges();
-    } catch {
-        alert("Cannot connect to the server.");
-    }
-}
-
-async function acceptInvitation(id) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/accept-invite`, { method: "PUT" });
-        const data = await res.json();
-        if (!res.ok) return alert(data.message || "Could not accept invitation.");
-        alert("Invitation accepted!");
-        loadInvitations();
-        updateSidebarBadges();
-    } catch {
-        alert("Cannot connect to the server.");
-    }
-}
-
-async function rejectInvitation(id) {
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/reject-invite`, { method: "PUT" });
-        const data = await res.json();
-        if (!res.ok) return alert(data.message || "Could not reject invitation.");
-        alert("Invitation rejected.");
-        loadInvitations();
-        updateSidebarBadges();
-    } catch {
-        alert("Cannot connect to the server.");
-    }
-}
-
-loadReceivedRequests();
-loadSentRequests();
-loadInvitations();
-setInterval(loadReceivedRequests, 5000);
 </script>
 </body>
 </html>

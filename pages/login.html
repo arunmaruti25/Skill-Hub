@@ -7,56 +7,135 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        :root { --bg-dark: #001D39; --card-bg: #0A4174; --accent-blue: #7BBDE8; --soft-blue: #6EA2B3; --light-blue: #BDD8E9; --white: #fff; }
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: radial-gradient(circle at top, #0A4174, #001D39 75%); color: var(--white); min-height: 100vh; }
-        .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px 20px; position: relative; overflow: hidden; }
-        .auth-page::before, .auth-page::after { content: ""; position: absolute; border-radius: 50%; filter: blur(80px); }
-        .auth-page::before { width: 400px; height: 400px; background: rgba(84,131,179,.18); top: -150px; left: -100px; }
-        .auth-page::after { width: 350px; height: 350px; background: rgba(193,232,255,.12); bottom: -150px; right: -100px; }
-        .auth-box { width: 100%; max-width: 460px; padding: 38px; background: rgba(5,38,89,.92); border: 1px solid rgba(125,160,202,.45); border-radius: 24px; position: relative; z-index: 2; box-shadow: 0 25px 60px rgba(0,0,0,.45), 0 0 30px rgba(84,131,179,.12); backdrop-filter: blur(15px); }
-        .auth-box .logo { display: flex; align-items: center; gap: 10px; color: var(--white); font-size: 24px; font-weight: 800; text-decoration: none; margin-bottom: 25px; }
-        .auth-box .logo i { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: var(--accent-blue); color: var(--bg-dark); border-radius: 12px; font-size: 19px; box-shadow: 0 6px 18px rgba(84,131,179,.3); }
-        .auth-box h1 { margin: 0 0 8px; color: var(--light-blue); font-size: 30px; }
-        .auth-box > p { margin: 0 0 28px; color: var(--soft-blue); font-size: 14px; }
-        #loginForm { display: flex; flex-direction: column; }
-        #loginForm label { margin-bottom: 7px; color: var(--light-blue); font-size: 13px; font-weight: 600; }
-        #loginForm input { width: 100%; height: 48px; padding: 0 14px; margin-bottom: 18px; background: rgba(2,16,36,.65); border: 1px solid rgba(125,160,202,.45); border-radius: 11px; outline: none; color: var(--white); font-size: 14px; transition: .25s; }
-        #loginForm input::placeholder { color: rgba(193,232,255,.48); }
-        #loginForm input:focus { border-color: var(--light-blue); background: rgba(2,16,36,.85); box-shadow: 0 0 0 3px rgba(193,232,255,.08); }
-        #loginForm .primary-btn { width: 100%; height: 48px; margin-top: 5px; border: none; border-radius: 11px; background: var(--accent-blue); color: var(--white); font-size: 14px; font-weight: 700; cursor: pointer; transition: .25s; }
-        #loginForm .primary-btn:hover { background: var(--light-blue); color: var(--bg-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(193,232,255,.25); }
-        #loginForm .primary-btn:active { transform: scale(.98); }
-        .auth-link { text-align: center; margin: 20px 0 0 !important; color: var(--soft-blue) !important; font-size: 13px !important; }
-        .auth-link a { color: var(--light-blue); font-weight: 700; text-decoration: none; }
-        .auth-link a:hover { color: var(--white); text-decoration: underline; }
-        @media (max-width: 520px) {
-            .auth-page { padding: 20px 15px; }
-            .auth-box { padding: 28px 22px; border-radius: 20px; }
-            .auth-box h1 { font-size: 26px; }
-            .auth-box .logo { font-size: 21px; }
-        }
-    </style>
+:root {
+        --c-white:       #FFFFFF;
+        --c-bg-light:    #EAF6FF;
+        --c-border:      #C1E5FF;
+        --c-sky-mid:     #9CD5FF;
+        --c-blue-primary:#6AB0E3;
+        --c-text-dark:   #001D39;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: var(--c-bg-light); color: var(--c-text-dark); min-height: 100vh; }
+    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px 20px; position: relative; overflow: hidden; }
+    .auth-page::before, .auth-page::after { content: ""; position: absolute; border-radius: 50%; filter: blur(80px); }
+    .auth-page::before { width: 400px; height: 400px; background: rgba(156,213,255,.18); top: -150px; left: -100px; }
+    .auth-page::after { width: 350px; height: 350px; background: rgba(193,229,255,.12); bottom: -150px; right: -100px; }
+    .auth-box { width: 100%; max-width: 460px; padding: 38px; background: rgba(255,255,255,0.9); border: 1px solid var(--c-border); border-radius: 24px; position: relative; z-index: 2; box-shadow: 0 25px 60px rgba(0,29,57,0.15), 0 0 30px rgba(156,213,255,0.12); backdrop-filter: blur(15px); }
+    .auth-box .logo { display: flex; align-items: center; gap: 10px; color: var(--c-blue-primary); font-size: 24px; font-weight: 800; text-decoration: none; margin-bottom: 25px; }
+    .auth-box .logo i { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: var(--c-sky-mid); color: var(--c-text-dark); border-radius: 12px; font-size: 19px; box-shadow: 0 6px 18px rgba(156,213,255,.3); }
+    .auth-box h1 { margin: 0 0 8px; color: var(--c-blue-primary); font-size: 30px; }
+    .auth-box > p { margin: 0 0 28px; color: var(--c-border); font-size: 14px; }
+    #loginForm { display: flex; flex-direction: column; }
+    #loginForm label { margin-bottom: 7px; color: var(--c-blue-primary); font-size: 13px; font-weight: 600; }
+    #loginForm input { width: 100%; height: 48px; padding: 0 14px; margin-bottom: 18px; background: rgba(255,255,255,0.7); border: 1.5px solid var(--border); border-radius: 11px; outline: none; color: var(--c-text-dark); font-size: 14px; transition: .25s; }
+    #loginForm input::placeholder { color: rgba(193,229,255,.48); }
+    #loginForm input:focus { border-color: var(--c-sky-mid); background: rgba(255,255,255,0.9); box-shadow: 0 0 0 3px rgba(156,213,255,.08); }
+    #loginForm .primary-btn { width: 100%; height: 48px; margin-top: 5px; border: none; border-radius: 11px; background: var(--c-blue-primary); color: var(--c-white); font-size: 14px; font-weight: 700; cursor: pointer; transition: .25s; }
+    #loginForm .primary-btn:hover { background: var(--c-sky-mid); color: var(--c-text-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(156,213,255,.25); }
+    .auth-link { text-align: center; margin: 20px 0 0 !important; color: var(--c-border) !important; font-size: 13px !important; }
+.password-wrapper {
+    position: relative;
+    width: 100%;
+    margin-bottom: 18px;
+}
+.password-wrapper input {
+    width: 100%;
+    margin-bottom: 0 !important;
+    padding-right: 45px !important;
+}
+.toggle-password-btn {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--c-blue-primary, #6AB0E3);
+    font-size: 15px;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+.toggle-password-btn:hover {
+    color: var(--c-text-dark, #001D39);
+}
+    .auth-link a { color: var(--c-sky-mid); font-weight: 700; text-decoration: none; }
+    .auth-link a:hover { color: var(--c-white); text-decoration: underline; }
+</style>
 </head>
 <body>
-    <div class="auth-page">
-        <div class="auth-box">
-            <a href="../index.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
-            <h1>Welcome Back</h1>
-            <p>Login to continue to Skill Hub.</p>
-            <form id="loginForm">
-                <label>Email Address</label>
-                <input type="email" id="loginEmail" placeholder="Enter your email" required>
-                <label>Password</label>
-                <input type="password" id="loginPassword" placeholder="Enter your password" required>
-                <div style="text-align: right; margin-top: -10px; margin-bottom: 18px;">
-                    <a href="forgot-password.html" style="color: var(--accent-blue); font-size: 12.5px; font-weight: 600; text-decoration: none;">Forgot Password?</a>
-                </div>
-                <button type="submit" class="primary-btn">Login</button>
-            </form>
-            <p class="auth-link">Don't have an account? <a href="register.html">Create Account</a></p>
-        </div>
+<div class="auth-page">
+    <div class="auth-box">
+        <a href="../index.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
+        <h1>Welcome Back</h1>
+        <p>Sign in to your account to continue</p>
+        <form id="loginForm">
+            <label for="loginEmail">Email Address</label>
+            <input type="email" id="loginEmail" name="email" placeholder="you@example.com" required autocomplete="email">
+            <label for="loginPassword">Password</label>
+            <div class="password-wrapper">
+                <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                <button type="button" class="toggle-password-btn" onclick="togglePassword('loginPassword', this)">
+                    <i class="fa-solid fa-eye-slash"></i>
+                </button>
+            </div>
+            <button type="submit" class="primary-btn"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+        </form>
+        <p class="auth-link">Don't have an account? <a href="register.html">Create one</a></p>
+        <p class="auth-link"><a href="forgot-password.html">Forgot password?</a></p>
     </div>
-    <script src="../js/app.js"></script>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    function togglePassword(inputId, btn) {
+        const passwordInput = document.getElementById(inputId);
+        const type = passwordInput.type === 'password' ? 'text' : 'password';
+        passwordInput.type = type;
+        btn.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+    }
+    const form = document.getElementById('loginForm');
+    const toggleBtn = document.querySelector('.toggle-password-btn');
+
+    toggleBtn?.addEventListener('click', () => {
+        togglePassword('loginPassword', toggleBtn);
+    });
+
+    form?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector('.primary-btn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
+        btn.disabled = true;
+
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData);
+
+        try {
+            const res = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (res.ok) {
+                localStorage.setItem('token', result.token);
+                localStorage.setItem('user', JSON.stringify(result.user));
+                window.location.href = 'dashboard.html';
+            } else {
+                alert(result.message || 'Login failed');
+            }
+        } catch (err) {
+            alert('Network error. Please try again.');
+        } finally {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    });
+});
+</script>
 </body>
 </html>

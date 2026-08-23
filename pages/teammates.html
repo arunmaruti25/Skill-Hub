@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body>
-
 <aside class="sidebar">
     <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
     <nav>
@@ -35,129 +34,90 @@
 
     <div class="dashboard-search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="searchInput" placeholder="Search by name or skill...">
-        <button onclick="filterUsers()">Search</button>
+        <input type="text" id="teammateSearch" placeholder="Search by name, skill, or bio..." oninput="filterTeammates()">
     </div>
 
     <div class="filters">
-        <select id="skillFilter" onchange="filterUsers()"><option value="">All Skills</option></select>
-        <select id="experienceFilter" onchange="filterUsers()">
-            <option value="">Experience</option>
-            <option>Beginner</option>
-            <option>Intermediate</option>
-            <option>Advanced</option>
-        </select>
-        <select id="availabilityFilter" onchange="filterUsers()">
-            <option value="">Availability</option>
-            <option>Available</option>
-            <option>Part-time</option>
-            <option>Weekends</option>
-        </select>
+        <select id="skillFilterTeammates"><option value="">All Skills</option></select>
     </div>
 
-    <h2 class="results-title">Recommended Teammates</h2>
-    <div class="people" id="usersContainer"><p>Loading teammates...</p></div>
+    <div id="teammatesGrid" class="people">
+        <p class="section-text" style="grid-column:1/-1;text-align:center;">Loading teammates...</p>
+    </div>
 </main>
 
-<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
 <script>
-let allUsers = [];
-const container = document.getElementById("usersContainer");
-const searchInput = document.getElementById("searchInput");
-const skillFilter = document.getElementById("skillFilter");
-const experienceFilter = document.getElementById("experienceFilter");
-const availabilityFilter = document.getElementById("availabilityFilter");
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+    loadTeammates();
+    loadSkillFilter();
+});
 
-async function loadUsers() {
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+
+async function loadTeammates() {
+    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/users`);
-        if (!res.ok) throw new Error("Could not load users");
-        allUsers = await res.json();
-        createSkillOptions();
-        displayUsers(allUsers);
+        const res = await fetch('/api/users/teammates', { headers: { 'Authorization': `Bearer ${token}` } });
+        const teammates = await res.json();
+        renderTeammates(teammates);
     } catch (err) {
-        console.error(err);
-        container.innerHTML = "<p>Cannot connect to the server.</p>";
+        console.error('Load teammates error:', err);
     }
 }
 
-function createSkillOptions() {
-    const skills = [...new Set(allUsers.flatMap(u => u.skills || []))].sort();
-    skills.forEach(skill => {
-        const option = document.createElement("option");
-        option.value = skill;
-        option.textContent = skill;
-        skillFilter.appendChild(option);
-    });
-}
-
-function displayUsers(users) {
-    container.innerHTML = "";
-    if (!users.length) {
-        container.innerHTML = `
-            <div class="person">
-                <i class="fa-solid fa-user-slash" style="font-size:30px;"></i>
-                <h3>No teammates found</h3>
-                <p>Try a different search or filter.</p>
-            </div>
-        `;
+function renderTeammates(teammates) {
+    const container = document.getElementById('teammatesGrid');
+    if (!teammates.length) {
+        container.innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;">No teammates found.</p>';
         return;
     }
+    container.innerHTML = teammates.map(t => `
+        <div class="person">
+            <div class="avatar">${t.name?.charAt(0) || 'U'}</div>
+            <h3>${t.name}</h3>
+            <p>${t.role || 'Developer'}</p>
+            <div class="tags" style="justify-content:center;">
+                ${(t.skills || []).slice(0, 4).map(s => `<span>${s}</span>`).join('')}
+            </div>
+            <button class="primary-btn" onclick="viewProfile('${t._id}')"><i class="fa-solid fa-user"></i> View Profile</button>
+        </div>
+    `).join('');
+}
 
-    users.forEach(user => {
-        const card = document.createElement("div");
-        card.className = "person";
-        const letter = user.name?.charAt(0).toUpperCase() || "U";
-        const skills = user.skills?.length ? user.skills.map(s => `<span>${s}</span>`).join("") : "<span>No skills added</span>";
-        const avatar = user.profileImage ? `<img src="${API_BASE_URL}${user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${letter}'">` : letter;
+async function loadSkillFilter() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/skills', { headers: { 'Authorization': `Bearer ${token}` } });
+        const skills = await res.json();
+        const select = document.getElementById('skillFilterTeammates');
+        skills.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            select.appendChild(opt);
+        });
+    } catch (err) { console.error('Load skills error:', err); }
+}
 
-        card.innerHTML = `
-            <div class="avatar">${avatar}</div>
-            <h3>${user.name}</h3>
-            <p>${user.bio || "Skill Hub Member"}</p>
-            <div class="tags">${skills}</div>
-            <p><strong>Experience:</strong> ${user.experience || "Beginner"}</p>
-            <p><strong>Availability:</strong> ${user.availability || "Available"}</p>
-            ${user.location ? `<p><i class="fa-solid fa-location-dot"></i> ${user.location}</p>` : ""}
-            <button onclick="viewProfile('${user._id}')">View Profile</button>
-        `;
-        container.appendChild(card);
+function filterTeammates() {
+    const search = document.getElementById('teammateSearch').value.toLowerCase();
+    const skill = document.getElementById('skillFilterTeammates').value;
+    const cards = document.querySelectorAll('#teammatesGrid .person');
+    
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const matchesSearch = !search || text.includes(search);
+        const matchesSkill = !skill || text.includes(skill.toLowerCase());
+        card.style.display = (matchesSearch && matchesSkill) ? 'block' : 'none';
     });
 }
 
-function filterUsers() {
-    const search = searchInput.value.toLowerCase().trim();
-    const skill = skillFilter.value.toLowerCase();
-    const experience = experienceFilter.value;
-    const availability = availabilityFilter.value;
-
-    const filtered = allUsers.filter(user => {
-        const name = (user.name || "").toLowerCase();
-        const bio = (user.bio || "").toLowerCase();
-        const skills = (user.skills || []).map(s => s.toLowerCase());
-
-        const searchMatch = !search || name.includes(search) || bio.includes(search) || skills.some(s => s.includes(search));
-        const skillMatch = !skill || skills.includes(skill);
-        const expMatch = !experience || user.experience === experience;
-        const availMatch = !availability || user.availability === availability;
-
-        return searchMatch && skillMatch && expMatch && availMatch;
-    });
-
-    displayUsers(filtered);
+function viewProfile(userId) {
+    window.location.href = `user-profile.html?id=${userId}`;
 }
-
-function viewProfile(id) {
-    window.location.href = "user-profile.html?id=" + id;
-}
-
-const urlParams = new URLSearchParams(window.location.search);
-const searchValue = urlParams.get("search");
-if (searchValue) searchInput.value = searchValue;
-
-loadUsers().then(() => {
-    if (searchValue) filterUsers();
-});
 </script>
 </body>
 </html>

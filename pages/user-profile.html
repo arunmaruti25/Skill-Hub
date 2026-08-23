@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
 <body>
-
 <aside class="sidebar">
     <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
     <nav>
@@ -34,149 +33,88 @@
         <button class="outline-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Back to Teammates</button>
     </div>
 
-    <section class="dash-card" id="profileContainer"><p>Loading profile...</p></section>
+    <section class="dash-card profile-header">
+        <div class="big-avatar" id="userAvatar">U</div>
+        <div>
+            <h2 id="userName">Loading...</h2>
+            <p id="userRole">Developer</p>
+            <small>Member since <span id="userJoinDate">January 2024</span></small>
+        </div>
+    </section>
 
-    <section class="dash-card" id="inviteBox" style="display:none; margin-top:20px;">
-        <h2>Invite to Project</h2>
-        <p>Select one of your projects to invite this teammate.</p>
-        <select id="projectSelect" style="width:100%; padding:12px; margin:15px 0; border-radius:var(--radius-md); border:1px solid var(--c-border); background:var(--c-surface); color:var(--c-text-primary);">
-            <option value="">Select a project</option>
-        </select>
-        <button class="primary-btn" onclick="sendInvitation()"><i class="fa-solid fa-user-plus"></i> Send Invitation</button>
-        <button class="outline-btn" onclick="closeInvite()" style="margin-left:10px;">Cancel</button>
+    <section class="dash-card">
+        <h2>About</h2>
+        <p id="userBio" style="color:#2F4156;">No bio provided.</p>
+    </section>
+
+    <section class="dash-card">
+        <div class="card-title"><h2>Skills</h2></div>
+        <div class="tags" id="userSkills"></div>
+    </section>
+
+    <section class="dash-card">
+        <h2>Projects</h2>
+        <div id="userProjects">
+            <p class="section-text">Loading...</p>
+        </div>
     </section>
 </main>
 
-<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
 <script>
-const userId = new URLSearchParams(location.search).get("id");
-const loggedInUser = JSON.parse(localStorage.getItem("user"));
-const container = document.getElementById("profileContainer");
-const inviteBox = document.getElementById("inviteBox");
-const projectSelect = document.getElementById("projectSelect");
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get('id');
+    if (userId) loadUserProfile(userId);
+});
 
-async function loadProfile() {
-    if (!userId) {
-        container.innerHTML = "<h2>User not found</h2>";
-        return;
-    }
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+function goBack() { window.history.back(); }
+
+async function loadUserProfile(userId) {
+    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/` + userId);
+        const res = await fetch(`/api/users/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const user = await res.json();
-        if (!res.ok) {
-            container.innerHTML = "<h2>User not found</h2>";
-            return;
-        }
+        
+        document.getElementById('userName').textContent = user.name || 'User';
+        document.getElementById('userRole').textContent = user.role || 'Developer';
+        document.getElementById('userAvatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
+        document.getElementById('userJoinDate').textContent = new Date(user.createdAt).toLocaleDateString('en-US', {month:'long',year:'numeric'});
+        document.getElementById('userBio').textContent = user.bio || 'No bio provided.';
+        
+        const skillsContainer = document.getElementById('userSkills');
+        (user.skills || []).forEach(s => {
+            const span = document.createElement('span');
+            span.textContent = s;
+            skillsContainer.appendChild(span);
+        });
 
-        const letter = (user.name || "U").charAt(0).toUpperCase();
-        const skills = user.skills?.length ? user.skills.map(s => `<span>${s}</span>`).join("") : "<span>No skills added</span>";
-        const social = `
-            ${user.github ? `<a href="${user.github}" target="_blank" class="outline-btn"><i class="fa-brands fa-github"></i> GitHub</a>` : ""}
-            ${user.linkedin ? `<a href="${user.linkedin}" target="_blank" class="outline-btn"><i class="fa-brands fa-linkedin"></i> LinkedIn</a>` : ""}
-        `;
-
-        const actions = loggedInUser?.id && loggedInUser.id.toString() !== userId.toString() ? `
-            <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:20px;">
-                <button class="primary-btn" onclick="openChat()"><i class="fa-solid fa-message"></i> Message</button>
-                <button class="outline-btn" onclick="openInvite()"><i class="fa-solid fa-user-plus"></i> Invite to Project</button>
-            </div>
-        ` : "";
-
-        const avatar = user.profileImage ? `<img src="${API_BASE_URL}${user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${letter}'">` : letter;
-
-        container.innerHTML = `
-            <div style="text-align:center; padding:20px;">
-                <div class="big-avatar" style="margin:auto;display:flex;align-items:center;justify-content:center;">${avatar}</div>
-                <h2 style="margin-top:15px;">${user.name}</h2>
-                ${user.location ? `<p><i class="fa-solid fa-location-dot"></i> ${user.location}</p>` : ""}
-                ${actions}
-            </div>
-            <div style="margin-top:20px;">
-                <h2>About</h2>
-                <p>${user.bio || "This user has not added a bio yet."}</p>
-            </div>
-            <div style="margin-top:30px;">
-                <h2>Skills</h2>
-                <div class="tags">${skills}</div>
-            </div>
-            <div style="margin-top:30px;">
-                <h2>Experience & Availability</h2>
-                <div class="form-grid" style="margin-top:15px;">
-                    <div><strong>Experience</strong><p>${user.experience || "Beginner"}</p></div>
-                    <div><strong>Availability</strong><p>${user.availability || "Available"}</p></div>
-                </div>
-            </div>
-            <div style="margin-top:30px;">
-                <h2>Social Links</h2>
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:15px;">
-                    ${social || "<p>No social links added.</p>"}
-                </div>
-            </div>
-        `;
-    } catch {
-        container.innerHTML = "<h2>Cannot connect to server</h2><p>Make sure the backend is running.</p>";
+        loadUserProjects(userId);
+    } catch (err) {
+        console.error('Load user profile error:', err);
     }
 }
 
-function openChat() { location.href = "chat.html?user=" + userId; }
-
-async function openInvite() {
-    inviteBox.style.display = "block";
-    await loadMyProjects();
-    inviteBox.scrollIntoView({ behavior: "smooth" });
-}
-
-function closeInvite() { inviteBox.style.display = "none"; }
-
-async function loadMyProjects() {
-    projectSelect.innerHTML = "<option>Loading projects...</option>";
-    if (!loggedInUser?.id) return;
-
+async function loadUserProjects(userId) {
+    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/projects`);
+        const res = await fetch(`/api/users/${userId}/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
         const projects = await res.json();
-        const myProjects = projects.filter(p => (p.owner?._id || p.owner)?.toString() === loggedInUser.id.toString());
-
-        if (!myProjects.length) {
-            projectSelect.innerHTML = "<option>You don't own any projects</option>";
-            return;
-        }
-
-        projectSelect.innerHTML = "<option value=''>Select a project</option>";
-        myProjects.forEach(p => {
-            const opt = document.createElement("option");
-            opt.value = p._id;
-            opt.textContent = p.title;
-            projectSelect.appendChild(opt);
-        });
-    } catch {
-        projectSelect.innerHTML = "<option>Could not load projects</option>";
+        document.getElementById('userProjects').innerHTML = projects.length ? projects.map(p => `
+            <div class="project">
+                <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+                <div><h3>${p.title}</h3><p>${p.description?.substring(0,80)}...</p></div>
+                <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
+            </div>
+        `).join('') : '<p class="section-text">No projects yet.</p>';
+    } catch (err) {
+        console.error('Load projects error:', err);
     }
 }
-
-async function sendInvitation() {
-    const projectId = projectSelect.value;
-    if (!projectId) return alert("Please select a project.");
-    if (!loggedInUser?.id) return alert("Please login first.");
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}/invite`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ inviter: loggedInUser.id, invitee: userId })
-        });
-        const result = await res.json();
-        if (!res.ok) return alert(result.message || "Could not send invitation.");
-        alert("Invitation sent successfully!");
-        closeInvite();
-    } catch {
-        alert("Cannot connect to the server.");
-    }
-}
-
-function goBack() { location.href = "teammates.html"; }
-
-loadProfile();
 </script>
 </body>
 </html>

@@ -7,12 +7,20 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        .message-link { display: flex !important; align-items: center; }
-        .sidebar-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
-    </style>
+:root {
+        --c-white:       #FFFFFF;
+        --c-bg-light:    #EAF6FF;
+        --c-border:      #C1E5FF;
+        --c-sky-mid:     #9CD5FF;
+        --c-blue-primary:#6AB0E3;
+        --c-text-dark:   #001D39;
+        --c-error: #ef4444;
+    }
+    .message-link { display: flex !important; align-items: center; }
+    .sidebar-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
+</style>
 </head>
 <body>
-
 <aside class="sidebar">
     <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
     <nav>
@@ -32,154 +40,176 @@
 <main class="dashboard">
     <div class="dashboard-header">
         <div>
-            <h1>Welcome back, <span id="welcomeName">User</span>! 👋</h1>
-            <p>Find teammates and build something amazing.</p>
+            <h1>Dashboard</h1>
+            <p>Welcome back! Here's what's happening with your projects.</p>
         </div>
         <div class="user">
-            <div id="userAvatar">U</div>
-            <span id="userName">User</span>
+            <div id="userAvatar">JD</div>
+            <div>
+                <div id="userName">John Doe</div>
+                <small id="userRole">Developer</small>
+            </div>
         </div>
     </div>
 
     <div class="dashboard-search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input id="searchInput" type="text" placeholder="Search teammates, skills or projects...">
-        <button onclick="search()">Search</button>
+        <input type="text" id="searchInput" placeholder="Search projects, skills, teammates...">
+        <button onclick="filterDashboard()">Search</button>
     </div>
 
     <div class="stats">
-        <div><i class="fa-solid fa-user-group"></i><strong id="teammatesCount">0</strong><span>Teammates Found</span></div>
-        <div><i class="fa-solid fa-folder"></i><strong id="myProjectsCount">0</strong><span>My Projects</span></div>
-        <div><i class="fa-solid fa-paper-plane"></i><strong id="pendingRequestsCount">0</strong><span>Pending Requests</span></div>
+        <div><i class="fa-solid fa-folder"></i><strong id="statProjects">0</strong><span>My Projects</span></div>
+        <div><i class="fa-solid fa-user-group"></i><strong id="statTeammates">0</strong><span>Teammates</span></div>
+        <div><i class="fa-solid fa-paper-plane"></i><strong id="statRequests">0</strong><span>Pending Requests</span></div>
     </div>
 
     <div class="dashboard-grid">
         <section class="dash-card">
-            <div class="card-title"><h2>My Profile</h2><a href="profile.html">Edit</a></div>
+            <h2>Your Profile</h2>
             <div class="profile-summary">
-                <div class="avatar" id="profileAvatar">U</div>
-                <h3 id="profileName">User</h3>
-                <p id="profileBioPreview">No bio added yet</p>
+                <div class="avatar big-avatar" id="profileAvatar">JD</div>
+                <h3 id="profileName">John Doe</h3>
+                <p id="profileRole">Full Stack Developer</p>
             </div>
-            <div class="tags" id="dashboardSkills"><span>Loading...</span></div>
-            <a href="profile.html" class="outline-btn">View Profile</a>
+            <div class="tags" id="profileSkills"></div>
+            <div class="card-title"><h2>Quick Actions</h2></div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button class="primary-btn" onclick="showCreateProject()"><i class="fa-solid fa-plus"></i> New Project</button>
+                <button class="outline-btn" onclick="location.href='teammates.html'"><i class="fa-solid fa-user-group"></i> Find Teammates</button>
+                <button class="outline-btn" onclick="location.href='projects.html'"><i class="fa-solid fa-folder"></i> Browse Projects</button>
+            </div>
         </section>
 
         <section class="dash-card">
-            <div class="card-title"><h2>Featured Projects</h2><a href="projects.html">View All</a></div>
-            <div id="featuredProjects"><p>Loading projects...</p></div>
+            <div class="card-title"><h2>Recent Projects</h2></div>
+            <div id="recentProjects">
+                <p class="section-text">Loading projects...</p>
+            </div>
         </section>
     </div>
 
     <section class="dash-card">
-        <div class="card-title">
-            <div><h2>Find Teammates</h2><p>People you may want to collaborate with.</p></div>
-            <a href="teammates.html">Explore All</a>
+        <div class="card-title"><h2>Recent Activity</h2></div>
+        <div id="recentActivity">
+            <p class="section-text">Loading activity...</p>
         </div>
-        <div class="people"></div>
     </section>
 </main>
 
-<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
 <script>
-const user = JSON.parse(localStorage.getItem("user"));
+document.addEventListener('DOMContentLoaded', () => {
+    loadDashboard();
+    document.getElementById('searchInput')?.addEventListener('input', (e) => filterDashboard(e.target.value));
+});
+
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+function showCreateProject() { document.getElementById('createProjectModal').style.display = 'flex'; }
+function closeCreateProject() { document.getElementById('createProjectModal').style.display = 'none'; }
 
 async function loadDashboard() {
-    if (!user?.id) return;
+    const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!token) return window.location.href = 'login.html';
+
+    document.getElementById('userName').textContent = user.name || 'User';
+    document.getElementById('userRole').textContent = user.role || 'Developer';
+    document.getElementById('userAvatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
+    document.getElementById('profileAvatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
+    document.getElementById('profileName').textContent = user.name || 'User';
+    document.getElementById('profileRole').textContent = user.role || 'Developer';
+
+    const skillsContainer = document.getElementById('profileSkills');
+    (user.skills || []).forEach(s => {
+        const span = document.createElement('span');
+        span.textContent = s;
+        skillsContainer.appendChild(span);
+    });
+
     try {
-        const res = await fetch(`${API_BASE_URL}/api/dashboard/` + user.id);
-        if (!res.ok) return;
-        const data = await res.json();
+        const [projectsRes, teammatesRes, requestsRes] = await Promise.all([
+            fetch('/api/projects', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/users/teammates', { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch('/api/requests', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
 
-        const name = data.user.name || "User";
-        const letter = name[0].toUpperCase();
-        document.getElementById("welcomeName").textContent = name;
-        document.getElementById("userName").textContent = name;
-        document.getElementById("profileName").textContent = name;
+        const projects = await projectsRes.json();
+        const teammates = await teammatesRes.json();
+        const requests = await requestsRes.json();
 
-        const imgHtml = data.user.profileImage ? `<img src="${API_BASE_URL}${data.user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${letter}'">` : letter;
-        document.getElementById("userAvatar").innerHTML = imgHtml;
-        document.getElementById("profileAvatar").innerHTML = imgHtml;
-        document.getElementById("profileBioPreview").textContent = data.user.bio || "No bio added yet";
+        document.getElementById('statProjects').textContent = projects.length || 0;
+        document.getElementById('statTeammates').textContent = teammates.length || 0;
+        document.getElementById('statRequests').textContent = requests.filter(r => r.status === 'pending').length || 0;
+        document.getElementById('requestBadge').textContent = requests.filter(r => r.status === 'pending').length || 0;
+        document.getElementById('requestBadge').style.display = requests.filter(r => r.status === 'pending').length ? 'flex' : 'none';
 
-        const skills = document.getElementById("dashboardSkills");
-        skills.innerHTML = data.user.skills?.length ? data.user.skills.map(s => `<span>${s}</span>`).join("") : "<span>No skills added yet</span>";
-
-        document.getElementById("teammatesCount").textContent = data.teammatesCount;
-        document.getElementById("myProjectsCount").textContent = data.myProjectsCount;
-        document.getElementById("pendingRequestsCount").textContent = data.pendingRequestsCount;
-
-        const reqBadge = document.getElementById("requestBadge");
-        if (reqBadge) {
-            reqBadge.textContent = data.pendingRequestsCount;
-            reqBadge.style.display = data.pendingRequestsCount > 0 ? "flex" : "none";
-        }
-
-        const projectContainer = document.getElementById("featuredProjects");
-        if (!data.featuredProjects?.length) {
-            projectContainer.innerHTML = "<p>No projects available yet.</p>";
-        } else {
-            const icons = ["fa-code", "fa-mobile-screen", "fa-leaf"];
-            projectContainer.innerHTML = data.featuredProjects.map((p, i) => `
+        const recentContainer = document.getElementById('recentProjects');
+        if (projects.length) {
+            recentContainer.innerHTML = projects.slice(0, 3).map(p => `
                 <div class="project">
-                    <div class="project-icon"><i class="fa-solid ${icons[i % icons.length]}"></i></div>
-                    <div><h3>${p.title}</h3><p>${p.skills?.length ? p.skills.join(" • ") : "No skills specified"}</p></div>
-                    <button onclick="location.href='project-details.html?id=${p._id}'"><i class="fa-solid fa-arrow-right"></i> View</button>
+                    <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+                    <div>
+                        <h3>${p.title}</h3>
+                        <p>${p.description?.substring(0, 80)}...</p>
+                    </div>
+                    <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
                 </div>
-            `).join("");
+            `).join('');
+        } else {
+            recentContainer.innerHTML = '<p class="section-text">No projects yet. <a href="#" onclick="showCreateProject()">Create one</a></p>';
         }
 
-        const peopleContainer = document.querySelector(".people");
-        if (peopleContainer) {
-            if (!data.teammates?.length) {
-                peopleContainer.innerHTML = "<p>No teammates available yet.</p>";
-            } else {
-                peopleContainer.innerHTML = data.teammates.map(p => {
-                    const pName = p.name || "User";
-                    const pAvatar = p.profileImage ? `<img src="${API_BASE_URL}${p.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${pName[0].toUpperCase()}'">` : pName[0].toUpperCase();
-                    const pSkills = p.skills?.length ? p.skills.slice(0, 2).map(s => `<span>${s}</span>`).join("") : "<span>No skills added</span>";
-                    return `
-                        <div class="person">
-                            <div class="avatar">${pAvatar}</div>
-                            <h3>${pName}</h3>
-                            <p>${p.experience || "Skill Hub Member"}</p>
-                            <div class="tags">${pSkills}</div>
-                            <button onclick="location.href='user-profile.html?id=${p._id}'">View Profile</button>
-                        </div>
-                    `;
-                }).join("");
-            }
-        }
     } catch (err) {
-        console.error("Dashboard error:", err);
+        console.error('Dashboard load error:', err);
     }
 }
 
-async function loadMessageCount() {
-    if (!user?.id) return;
+function filterDashboard(query = '') {
+    const cards = document.querySelectorAll('.project');
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query.toLowerCase()) ? 'flex' : 'none';
+    });
+}
+</script>
+
+<div id="createProjectModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,29,57,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div class="auth-box" style="width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h2>Create Project</h2>
+            <button class="outline-btn" onclick="closeCreateProject()" style="padding:8px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="createProjectForm">
+            <label>Project Title</label>
+            <input type="text" name="title" placeholder="My Awesome Project" required>
+            <label>Description</label>
+            <textarea name="description" placeholder="Describe your project..." required></textarea>
+            <label>Required Skills (comma separated)</label>
+            <input type="text" name="skills" placeholder="React, Node.js, MongoDB" required>
+            <button type="submit" class="primary-btn" style="width:100%;margin-top:10px;"><i class="fa-solid fa-plus"></i> Create Project</button>
+        </form>
+    </div>
+</div>
+<script>
+document.getElementById('createProjectForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    data.skills = data.skills.split(',').map(s => s.trim()).filter(Boolean);
+    data.owner = JSON.parse(localStorage.getItem('user'))._id;
+
     try {
-        const res = await fetch(`${API_BASE_URL}/api/message-inbox/` + user.id);
-        if (!res.ok) return;
-        const chats = await res.json();
-        const unread = chats.reduce((total, chat) => total + Number(chat.unreadCount || 0), 0);
-        const badge = document.getElementById("messageBadge");
-        if (badge) {
-            badge.textContent = unread;
-            badge.style.display = unread ? "flex" : "none";
-        }
-    } catch (err) {
-        console.error("Message count error:", err);
-    }
-}
-
-function search() {
-    const value = document.getElementById("searchInput").value.trim();
-    if (value) location.href = "teammates.html?search=" + encodeURIComponent(value);
-}
-
-loadDashboard();
-loadMessageCount();
-setInterval(loadMessageCount, 5000);
+        const res = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) { closeCreateProject(); loadDashboard(); }
+        else alert('Failed to create project');
+    } catch (err) { alert('Network error'); }
+});
 </script>
 </body>
 </html>

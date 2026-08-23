@@ -7,42 +7,49 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        .chat-container { height: calc(100vh - 180px); min-height: 500px; display: flex; flex-direction: column; }
-        .chat-header { display: flex; align-items: center; gap: 15px; padding-bottom: 20px; border-bottom: 1px solid #ddd; }
-        .chat-header .avatar { flex-shrink: 0; }
-        .chat-header-info h2 { margin: 0; }
-        .chat-header-info p { margin: 5px 0 0; color: #777; }
-        .chat-messages { flex: 1; overflow-y: auto; padding: 25px 10px; display: flex; flex-direction: column; gap: 12px; }
-        .message-row { display: flex; width: 100%; }
-        .message-row.sent { justify-content: flex-end; }
-        .message-row.received { justify-content: flex-start; }
-        .message-bubble { max-width: 65%; padding: 12px 16px; border-radius: 15px; word-wrap: break-word; }
-        .message-row.sent .message-bubble { background: #4560b2; color: white; border-bottom-right-radius: 4px; }
-        .message-row.received .message-bubble { background: #f0f1f5; color: #222; border-bottom-left-radius: 4px; }
-        .message-time { font-size: 11px; margin-top: 5px; opacity: .7; }
-        .chat-input-area { display: flex; gap: 10px; padding-top: 15px; border-top: 1px solid #ddd; }
-        .chat-input-area input { flex: 1; padding: 13px 15px; border: 1px solid #ccc; border-radius: 25px; outline: none; font-size: 15px; }
-        .chat-input-area button { border: none; border-radius: 25px; padding: 0 22px; background: #4560b2; color: white; cursor: pointer; }
-        .chat-input-area button:hover { opacity: .9; }
-        .no-messages { margin: auto; text-align: center; color: #777; }
-        .sidebar-message-link { display: flex !important; align-items: center; }
-        .sidebar-message-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: #f44336; color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
-        @media (max-width: 700px) {
-            .message-bubble { max-width: 85%; }
-            .chat-container { height: calc(100vh - 140px); }
-        }
-    </style>
+:root {
+        --c-white:       #FFFFFF;
+        --c-bg-light:    #EAF6FF;
+        --c-border:      #C1E5FF;
+        --c-sky-mid:     #9CD5FF;
+        --c-blue-primary:#6AB0E3;
+        --c-text-dark:   #001D39;
+    }
+    .chat-container { height: calc(100vh - 180px); min-height: 500px; display: flex; flex-direction: column; }
+    .chat-header { display: flex; align-items: center; gap: 15px; padding-bottom: 20px; border-bottom: 1px solid var(--c-border); }
+    .chat-header .avatar { flex-shrink: 0; }
+    .chat-header-info h2 { margin: 0; color: #001D39; }
+    .chat-header-info p { margin: 5px 0 0; color: #2F4156; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 25px 10px; display: flex; flex-direction: column; gap: 12px; }
+    .message-row { display: flex; width: 100%; }
+    .message-row.sent { justify-content: flex-end; }
+    .message-row.received { justify-content: flex-start; }
+    .message-bubble { max-width: 65%; padding: 12px 16px; border-radius: 15px; word-wrap: break-word; }
+    .message-row.sent .message-bubble { background: var(--c-blue-primary); color: var(--c-white); border-bottom-right-radius: 4px; }
+    .message-row.received .message-bubble { background: var(--c-white); color: var(--c-text-dark); border: 1px solid var(--c-border); border-radius: 15px; }
+    .message-time { font-size: 11px; margin-top: 5px; opacity: .7; }
+    .chat-input-area { display: flex; gap: 10px; padding-top: 15px; border-top: 1px solid var(--c-border); }
+    .chat-input-area input { flex: 1; padding: 13px 15px; border: 1px solid var(--c-border); border-radius: 25px; outline: none; font-size: 15px; color: var(--c-text-dark); }
+    .chat-input-area button { border: none; border-radius: 25px; padding: 0 22px; background: var(--c-blue-primary); color: var(--c-white); cursor: pointer; }
+    .chat-input-area button:hover { opacity: .9; }
+    .no-messages { margin: auto; text-align: center; color: #2F4156; }
+    .sidebar-message-link { display: flex !important; align-items: center; }
+    .sidebar-message-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: #f44336; color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
+    @media (max-width: 700px) {
+        .message-bubble { max-width: 85%; }
+        .chat-container { height: calc(100vh - 140px); }
+    }
+</style>
 </head>
 <body>
-
 <aside class="sidebar">
     <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
     <nav>
         <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
         <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
-        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests</a>
-        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications</a>
+        <a href="requests.html" class="sidebar-message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-message-badge">0</span></a>
+        <a href="notifications.html" class="sidebar-message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-message-badge">0</span></a>
         <a href="messages.html" class="active sidebar-message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-message-badge">0</span></a>
     </nav>
     <div class="sidebar-bottom">
@@ -55,179 +62,62 @@
     <div class="page-head">
         <div>
             <h1>Messages</h1>
-            <p>Chat with your Skill Hub teammates.</p>
+            <p>Your conversations with teammates</p>
         </div>
-        <button class="outline-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Back to Messages</button>
     </div>
 
-    <section class="dash-card chat-container">
-        <div class="chat-header">
-            <div class="avatar" id="chatAvatar">U</div>
-            <div class="chat-header-info">
-                <h2 id="chatUserName">Loading...</h2>
-                <p>Skill Hub teammate</p>
-            </div>
+    <div class="chat-container" id="conversationsList">
+        <div class="empty-messages">
+            <i class="fa-solid fa-comments" style="font-size:48px;color:var(--c-border);margin-bottom:15px;"></i>
+            <h3>No conversations yet</h3>
+            <p style="color:#2F4156;">Start a conversation with a teammate from the <a href="teammates.html" style="color:var(--c-blue-primary);">Find Teammates</a> page.</p>
         </div>
-
-        <div class="chat-messages" id="chatMessages">
-            <div class="no-messages">
-                <i class="fa-solid fa-comments" style="font-size:40px;margin-bottom:10px;"></i>
-                <p>Loading conversation...</p>
-            </div>
-        </div>
-
-        <form class="chat-input-area" id="messageForm">
-            <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off" maxlength="1000" required>
-            <button type="submit"><i class="fa-solid fa-paper-plane"></i> Send</button>
-        </form>
-    </section>
+    </div>
 </main>
 
-<script src="../js/app.js"></script>
+<script src="../js/auth.js"></script>
 <script>
-const params = new URLSearchParams(window.location.search);
-const otherUserId = params.get("user");
-const loggedInUser = JSON.parse(localStorage.getItem("user"));
-
-const chatUserName = document.getElementById("chatUserName");
-const chatAvatar = document.getElementById("chatAvatar");
-const chatMessages = document.getElementById("chatMessages");
-const messageInput = document.getElementById("messageInput");
-const messageBadge = document.getElementById("messageBadge");
-let otherUser = null;
-
-if (!loggedInUser?.id) {
-    alert("Please login first.");
-    window.location.href = "../index.html";
-}
-
-async function loadOtherUser() {
-    if (!otherUserId) return (chatUserName.textContent = "User not found");
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/` + otherUserId);
-        if (!res.ok) throw new Error();
-        otherUser = await res.json();
-        chatUserName.textContent = otherUser.name;
-        chatAvatar.innerHTML = otherUser.profileImage
-            ? `<img src="${API_BASE_URL}${otherUser.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.parentElement.innerHTML='${(otherUser.name||'U').charAt(0).toUpperCase()}'"`+ `>`
-            : (otherUser.name || "U").charAt(0).toUpperCase();
-        loadMessages();
-    } catch {
-        chatUserName.textContent = "User not found";
-        chatMessages.innerHTML = '<div class="no-messages"><p>Could not load this user.</p></div>';
-    }
-}
-
-async function loadMessages() {
-    if (!loggedInUser || !otherUserId) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/messages/${loggedInUser.id}/${otherUserId}`);
-        if (!res.ok) throw new Error();
-        const messages = await res.json();
-        displayMessages(messages);
-        await markMessagesRead();
-        loadMessageCount();
-    } catch {
-        chatMessages.innerHTML = '<div class="no-messages"><p>Could not load messages.</p></div>';
-    }
-}
-
-function displayMessages(messages) {
-    chatMessages.innerHTML = "";
-    if (!messages.length) {
-        chatMessages.innerHTML = `
-            <div class="no-messages">
-                <i class="fa-solid fa-comments" style="font-size:40px;"></i>
-                <p>No messages yet.</p>
-                <p>Start the conversation!</p>
-            </div>
-        `;
-        return;
-    }
-
-    messages.forEach(msg => {
-        const senderId = msg.sender?._id || msg.sender;
-        const isSent = senderId.toString() === loggedInUser.id.toString();
-
-        const row = document.createElement("div");
-        row.className = isSent ? "message-row sent" : "message-row received";
-
-        const bubble = document.createElement("div");
-        bubble.className = "message-bubble";
-
-        const messageText = document.createElement("div");
-        messageText.textContent = msg.message;
-
-        const time = document.createElement("div");
-        time.className = "message-time";
-        time.textContent = new Date(msg.createdAt).toLocaleString();
-
-        bubble.appendChild(messageText);
-        bubble.appendChild(time);
-        row.appendChild(bubble);
-        chatMessages.appendChild(row);
-    });
-
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-document.getElementById("messageForm").addEventListener("submit", async function(e) {
-    e.preventDefault();
-    const text = messageInput.value.trim();
-    if (!text || !loggedInUser?.id || !otherUserId) return;
-
-    const sendBtn = this.querySelector("button");
-    sendBtn.disabled = true;
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/messages`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sender: loggedInUser.id, receiver: otherUserId, message: text })
-        });
-        const result = await res.json();
-        if (!res.ok) return alert(result.message || "Could not send message.");
-        messageInput.value = "";
-        loadMessages();
-    } catch {
-        alert("Cannot connect to server.");
-    } finally {
-        sendBtn.disabled = false;
-        messageInput.focus();
-    }
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+    loadConversations();
 });
 
-async function markMessagesRead() {
-    if (!loggedInUser || !otherUserId) return;
-    try {
-        await fetch(`${API_BASE_URL}/api/messages/read/${loggedInUser.id}/${otherUserId}`, { method: "PUT" });
-    } catch (err) {
-        console.error(err);
-    }
-}
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
 
-async function loadMessageCount() {
-    if (!loggedInUser?.id) return;
+async function loadConversations() {
+    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/message-inbox/` + loggedInUser.id);
-        if (!res.ok) return;
+        const res = await fetch('/api/messages/conversations', { headers: { 'Authorization': `Bearer ${token}` } });
         const conversations = await res.json();
-        const unread = conversations.reduce((sum, c) => sum + Number(c.unreadCount || 0), 0);
-        if (messageBadge) {
-            messageBadge.textContent = unread;
-            messageBadge.style.display = unread > 0 ? "flex" : "none";
+        const container = document.getElementById('conversationsList');
+        
+        if (conversations.length === 0) {
+            container.innerHTML = `
+                <div class="empty-messages">
+                    <i class="fa-solid fa-comments" style="font-size:48px;color:var(--c-border);margin-bottom:15px;"></i>
+                    <h3>No conversations yet</h3>
+                    <p style="color:#2F4156;">Start a conversation with a teammate from the <a href="teammates.html" style="color:var(--c-blue-primary);">Find Teammates</a> page.</p>
+                </div>
+            `;
+            return;
         }
+
+        container.innerHTML = conversations.map(c => `
+            <a href="chat-detail.html?user=${c.otherUser._id}" class="conversation">
+                <div class="avatar" style="width:48px;height:48px;font-size:16px;">${c.otherUser.name?.charAt(0) || 'U'}</div>
+                <div class="conversation-info">
+                    <h3>${c.otherUser.name}</h3>
+                    <p>${c.lastMessage?.content || 'No messages yet'}</p>
+                </div>
+                <span class="conversation-time">${c.lastMessage ? new Date(c.lastMessage.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>
+                ${c.unreadCount > 0 ? `<span class="unread-count">${c.unreadCount}</span>` : ''}
+            </a>
+        `).join('');
     } catch (err) {
-        console.error("Error loading message count:", err);
+        console.error('Load conversations error:', err);
     }
 }
-
-function goBack() { window.location.href = "messages.html"; }
-
-loadOtherUser();
-loadMessageCount();
-setInterval(loadMessages, 3000);
-setInterval(loadMessageCount, 5000);
 </script>
 </body>
 </html>
