@@ -29,8 +29,9 @@ if (registerForm) {
             } else {
                 alert(data.message || "Registration failed");
             }
-        } catch {
-            alert("Cannot connect to the server.");
+        } catch (err) {
+            console.error("Login Fetch Error Details:", err);
+            alert("Network error: " + (err.message || "Please try again."));
         }
     });
 }
@@ -56,8 +57,9 @@ if (loginForm) {
             } else {
                 alert(data.message || "Login failed");
             }
-        } catch {
-            alert("Cannot connect to the server.");
+        } catch (err) {
+            console.error("Login Fetch Error Details:", err);
+            alert("Network error: " + (err.message || "Please try again."));
         }
     });
 }
