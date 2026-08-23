@@ -8,15 +8,21 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
         .notification-actions { display: flex; gap: 10px; margin-top: 15px; }
-        .accept-btn, .reject-btn { padding: 10px 18px; border-radius: 7px; cursor: pointer; }
-        .accept-btn { background: #4560b2; color: white; border: none; }
-        .reject-btn { background: white; color: #4560b2; border: 1px solid #4560b2; }
-        .accept-btn:hover, .reject-btn:hover { opacity: .85; }
-        .notification-message { font-size: 16px; margin-top: 10px; }
-        .notification-time { font-size: 13px; color: #777; margin-top: 5px; }
-        .empty-notifications { text-align: center; padding: 40px; color: #777; }
+        .accept-btn, .reject-btn { padding: 10px 18px; border-radius: 7px; cursor: pointer; font-weight: 600; }
+        .accept-btn { background: linear-gradient(135deg, var(--c-accent) 0%, var(--c-accent-hover) 100%); color: var(--c-base); border: none; }
+        .reject-btn { background: transparent; color: var(--c-accent); border: 1px solid var(--c-accent); }
+        .accept-btn:hover, .reject-btn:hover { opacity: .85; transform: translateY(-2px); }
+        .notification-message { font-size: 16px; margin-top: 10px; color: var(--c-text-secondary); }
+        .notification-time { font-size: 13px; color: var(--c-text-muted); margin-top: 5px; }
+        .empty-notifications { text-align: center; padding: 40px; color: var(--c-text-muted); }
         .sidebar-badge-link { display: flex !important; align-items: center; }
-        .sidebar-badge { display: none; margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: #f44336; color: white; font-size: 12px; font-weight: bold; align-items: center; justify-content: center; }
+        .sidebar-badge { display: none; margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; align-items: center; justify-content: center; }
+        .notification-card {
+            border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 20px; margin-bottom: 15px;
+            background: var(--card-bg);
+        }
+        .notification-card.unread { background: rgba(0, 212, 170, 0.05); border-color: var(--c-accent); }
+        .project-icon { background: rgba(0, 212, 170, 0.15); color: var(--c-accent); }
     </style>
 </head>
 <body>
@@ -88,7 +94,7 @@ function displayNotifications(notifications) {
     container.innerHTML = "";
     notifications.forEach(n => {
         const card = document.createElement("div");
-        card.style = `border: 1px solid #b5c2e8; border-radius: 12px; padding: 20px; margin-bottom: 15px; background: ${n.read ? "#ffffff" : "#f8f7ff"};`;
+        card.className = `notification-card${n.read ? '' : ' unread'}`;
         const date = new Date(n.createdAt);
 
         let actions = "";
@@ -108,7 +114,7 @@ function displayNotifications(notifications) {
                     <div class="notification-message">${n.message}</div>
                     <div class="notification-time">${date.toLocaleString()}</div>
                     ${actions}
-                    ${n.read ? '<span style="display:inline-block; margin-top:12px; font-size:13px; color:#777;"><i class="fa-solid fa-check"></i> Read</span>' : ""}
+                    ${n.read ? '<span style="display:inline-block; margin-top:12px; font-size:13px; color:var(--c-text-muted);"><i class="fa-solid fa-check"></i> Read</span>' : ""}
                 </div>
             </div>
         `;
