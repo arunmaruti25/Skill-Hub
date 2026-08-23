@@ -90,6 +90,10 @@
     </div>
 </div>
 <script>
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://127.0.0.1:5000"
+    : "https://skill-hub-backend-4w35.onrender.com";
+
 document.addEventListener('DOMContentLoaded', () => {
     function togglePassword(inputId, btn) {
         const passwordInput = document.getElementById(inputId);
@@ -115,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = Object.fromEntries(formData);
 
         try {
-            const res = await fetch('/api/auth/login', {
+            const res = await fetch(`${API_BASE_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
