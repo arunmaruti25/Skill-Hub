@@ -86,7 +86,14 @@ function loadProfile(user) {
     document.getElementById('profileName').textContent = user.name || 'User';
     document.getElementById('profileRole').textContent = user.role || 'Developer';
     document.getElementById('profileAvatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
-    document.getElementById('joinDate').textContent = new Date(user.createdAt).toLocaleDateString('en-US', {month:'long',year:'numeric'});
+    
+    const joinDateEl = document.getElementById('joinDate');
+    if (joinDateEl) {
+        joinDateEl.textContent = user.createdAt 
+            ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+            : 'Recently';
+    }
+    
     document.getElementById('editName').value = user.name || '';
     document.getElementById('editEmail').value = user.email || '';
     document.getElementById('editBio').value = user.bio || '';

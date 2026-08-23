@@ -132,54 +132,59 @@ function logout() { localStorage.clear(); window.location.href = '../index.html'
 
 async function loadAdminData() {
     const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     try {
-        const [usersRes, projectsRes, requestsRes, messagesRes] = await Promise.all([
-            fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch('/api/admin/projects', { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch('/api/admin/requests', { headers: { 'Authorization': `Bearer ${token}` } }),
-            fetch('/api/admin/messages/stats', { headers: { 'Authorization': `Bearer ${token}` } })
+        const [statsRes, usersRes, projectsRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/admin/stats`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${API_BASE_URL}/api/admin/users`, { headers: { 'Authorization': `Bearer ${token}` } }),
+            fetch(`${API_BASE_URL}/api/projects`, { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
 
+        const stats = await statsRes.json();
         const users = await usersRes.json();
         const projects = await projectsRes.json();
-        const requests = await requestsRes.json();
-        const msgStats = await messagesRes.json();
 
-        document.getElementById('statUsers').textContent = users.length;
-        document.getElementById('statProjects').textContent = projects.length;
-        document.getElementById('statRequests').textContent = requests.filter(r => r.status === 'pending').length;
-        document.getElementById('statMessages').textContent = msgStats.total || 0;
+        document.getElementById('statUsers').textContent = stats.totalUsers || users.length || 0;
+        document.getElementById('statProjects').textContent = stats.totalProjects || projects.length || 0;
+        document.getElementById('statRequests').textContent = stats.totalRequests || 0;
+        document.getElementById('statMessages').textContent = stats.totalMessages || 0;
+       document.getElementById('userCountText').textContent = `${users.length || 0} users`;
+       document.getElementById('projectCountText').textContent = `${projects.length || 0} projects`;
 
-        document.getElementById('userCountText').textContent = `${users.length} users`;
-        document.getElementById('projectCountText').textContent = `${projects.length} projects`;
+       const usersBody = document.getElementById('usersTableBody');
+       if (Array.isArray(users) && users.length) {
+           usersBody.innerHTML = users.map(u => `
+               <tr>
+                   <td><div style="display:flex;align-items:center;gap:10px;"><div class="avatar" style="width:36px;height:36px;font-size:12px;">${u.name?.charAt(0) || 'U'}</div>${u.name}</div></td>
+                   <td>${u.email}</td>
+                   <td><span class="role-badge ${u.role}">${u.role}</span></td>
+                   <td><div class="tags">${(u.skills || []).map(s => `<span>${s}</span>`).join('')}</div></td>
+                   <td>${u.createdAt ? new Date(u.createdAt).toLocaleDateString() : 'N/A'}</td>
+                   <td>${u._id === user.id || u._id === user._id ? '<span style="color:#2F4156;font-size:11px;">(You)</span>' : `<button class="btn-delete" onclick="deleteUser('${u._id}', '${u.name}')"><i class="fa-solid fa-trash"></i> Delete</button>`}</td>
+               </tr>
+           `).join('');
+       } else {
+           usersBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No users found</td></tr>';
+       }
 
-        const usersBody = document.getElementById('usersTableBody');
-        usersBody.innerHTML = users.map(u => `
-            <tr>
-                <td><div style="display:flex;align-items:center;gap:10px;"><div class="avatar" style="width:36px;height:36px;font-size:12px;">${u.name?.charAt(0) || 'U'}</div>${u.name}</div></td>
-                <td>${u.email}</td>
-                <td><span class="role-badge ${u.role}">${u.role}</span></td>
-                <td><div class="tags">${(u.skills || []).map(s => `<span>${s}</span>`).join('')}</div></td>
-                <td>${new Date(u.createdAt).toLocaleDateString()}</td>
-                <td>${u._id === user._id ? '<span style="color:#2F4156;font-size:11px;">(You)</span>' : `<button class="btn-delete" onclick="deleteUser('${u._id}', '${u.name}')"><i class="fa-solid fa-trash"></i> Delete</button>`}</td>
-            </tr>
-        `).join('') || '<tr><td colspan="6" style="text-align:center;">No users found</td></tr>';
-
-        const projectsBody = document.getElementById('projectsTableBody');
-        projectsBody.innerHTML = projects.map(p => `
-            <tr>
-                <td><strong>${p.title}</strong></td>
-                <td>${p.owner?.name || 'Unknown'}</td>
-                <td><div class="tags">${(p.skills || []).map(s => `<span>${s}</span>`).join('')}</div></td>
-                <td>${p.members?.length || 1}</td>
-                <td>${new Date(p.createdAt).toLocaleDateString()}</td>
-                <td><button class="btn-delete" onclick="deleteProject('${p._id}')"><i class="fa-solid fa-trash"></i> Delete</button></td>
-            </tr>
-        `).join('') || '<tr><td colspan="6" style="text-align:center;">No projects found</td></tr>';
-
-    } catch (err) {
-        console.error('Admin load error:', err);
-    }
+       const projectsBody = document.getElementById('projectsTableBody');
+       if (Array.isArray(projects) && projects.length) {
+           projectsBody.innerHTML = projects.map(p => `
+               <tr>
+                   <td><strong>${p.title}</strong></td>
+                   <td>${p.owner?.name || 'Unknown'}</td>
+                   <td><div class="tags">${(p.skills || []).map(s => `<span>${s}</span>`).join('')}</div></td>
+                   <td>${p.members?.length || 1}</td>
+                   <td>${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A'}</td>
+                   <td><button class="btn-delete" onclick="deleteProject('${p._id}')"><i class="fa-solid fa-trash"></i> Delete</button></td>
+               </tr>
+           `).join('');
+       } else {
+           projectsBody.innerHTML = '<tr><td colspan="6" style="text-align:center;">No projects found</td></tr>';
+       }
+   } catch (err) {
+       console.error('Admin load error:', err);
+   }
 }
 
 async function deleteUser(id, name) {
