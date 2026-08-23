@@ -82,27 +82,32 @@ const API_BASE_URL = window.location.hostname === "localhost" || window.location
 
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
     if (!token) return window.location.href = 'login.html';
+    
+    // Unhide Admin Panel link
+    const adminLink = document.getElementById("adminNavLink");
+    if (adminLink && (user.role === "admin" || user.isAdmin)) {
+        adminLink.style.display = "flex";
+    }
+    
     loadProjects();
     loadSkillFilter();
 });
 
 function logout() { localStorage.clear(); window.location.href = '../index.html'; function showCreateProject() { document.getElementById('createProjectModal').style.display = 'flex'; } function closeCreateProject() { document.getElementById('createProjectModal').style.display = 'none'; }
 
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-const adminLink = document.getElementById('adminNavLink');
-if (adminLink && (user.role === 'admin' || user.isAdmin)) {
-    adminLink.style.display = 'flex';
-}
-
 async function loadProjects() {
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE_URL}/api/projects`, { 
+            headers: { 'Authorization': `Bearer ${token}` } 
+        });
         const projects = await res.json();
         renderProjects(projects);
     } catch (err) {
         console.error('Load projects error:', err);
+        document.getElementById('projectsGrid').innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;">Failed to load projects.</p>';
     }
 }
 
