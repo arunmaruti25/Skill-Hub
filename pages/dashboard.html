@@ -19,19 +19,20 @@
     .message-link { display: flex !important; align-items: center; }
     .sidebar-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
     /* Fix header profile overlap */
-    .user-profile-header, .header-profile, .user-menu {
+    .user-profile-header, .header-profile, .user-menu, .profile-dropdown {
         display: flex !important;
         align-items: center !important;
         gap: 10px !important;
         position: relative !important;
     }
-    .user-profile-header *, .header-profile *, .user-menu * {
+    .user-profile-header *, .header-profile *, .user-menu *, .profile-dropdown * {
         position: static !important;
+        transform: none !important;
     }
-    .user-profile-info {
+    .user-info, .profile-info {
         display: flex !important;
         flex-direction: column !important;
-        text-align: left !important;
+        align-items: flex-start !important;
     }
     .nav-item {
         display: flex;
