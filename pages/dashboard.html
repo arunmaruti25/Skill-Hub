@@ -143,9 +143,71 @@ document.addEventListener('DOMContentLoaded', () => {
     if (adminLink) {
         adminLink.style.display = (user.role === "admin" || user.isAdmin) ? "flex" : "none";
     }
+    
+    // Populate top-right header and profile card with user data
+    const topUserName = user.name || 'User';
+    const topUserAvatar = (user.name || 'U').charAt(0).toUpperCase();
+    const topUserRole = user.role || 'Developer';
+    
+    // Update top-right header
+    document.getElementById('userName').textContent = topUserName;
+    document.getElementById('userRole').textContent = topUserRole;
+    document.getElementById('userAvatar').textContent = topUserAvatar;
+    document.getElementById('profileAvatar').textContent = topUserAvatar;
+    document.getElementById('profileName').textContent = topUserName;
+    document.getElementById('profileRole').textContent = topUserRole;
+    
     loadDashboard();
     document.getElementById('searchInput')?.addEventListener('input', (e) => filterDashboard(e.target.value));
 });
+
+async function loadDashboard() {
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+    
+    try {
+        const [projectsRes, teammatesRes, requestsRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/projects`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`${API_BASE_URL}/api/users/teammates`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            }),
+            fetch(`${API_BASE_URL}/api/requests`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            })
+        ]);
+
+        const projects = await projectsRes.json();
+        const teammates = await teammatesRes.json();
+        const requests = await requestsRes.json();
+
+        document.getElementById('statProjects').textContent = projects.length || 0;
+        document.getElementById('statTeammates').textContent = teammates.length || 0;
+        document.getElementById('statRequests').textContent = requests.filter(r => r.status === 'pending').length || 0;
+        document.getElementById('requestBadge').textContent = requests.filter(r => r.status === 'pending').length || 0;
+        document.getElementById('requestBadge').style.display = requests.filter(r => r.status === 'pending').length ? 'flex' : 'none';
+
+        const recentContainer = document.getElementById('recentProjects');
+        if (projects.length) {
+            recentContainer.innerHTML = projects.slice(0, 3).map(p => `
+                <div class="project">
+                    <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+                    <div>
+                        <h3>${p.title}</h3>
+                        <p>${p.description?.substring(0, 80)}...</p>
+                    </div>
+                    <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
+                </div>
+            `).join('');
+        } else {
+            recentContainer.innerHTML = '<p class="section-text">No projects yet. <a href="#" onclick="showCreateProject()">Create one</a></p>';
+        }
+
+    } catch (err) {
+        console.error('Dashboard load error:', err);
+    }
+}
 </script>
 
 <div id="createProjectModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,29,57,0.5);z-index:1000;align-items:center;justify-content:center;">
