@@ -102,10 +102,10 @@ function renderNotifications(notifs) {
                 </div>
             </div>
 
-            ${n.type === 'project_invite' ? `
+            ${n.type === 'project_invite' && n.request && n.request.status === 'pending' ? `
                 <div class="notification-actions">
-                    <button class="accept-btn" onclick="handleProjectInvite('${n.request?._id || n.request}', 'accepted')"><i class="fa-solid fa-check"></i> Accept Invitation</button>
-                    <button class="btn-delete" onclick="handleProjectInvite('${n.request?._id || n.request}', 'rejected')"><i class="fa-solid fa-xmark"></i> Decline</button>
+                    <button class="accept-btn" onclick="handleProjectInvite('${n.request._id}', 'accepted')"><i class="fa-solid fa-check"></i> Accept Invitation</button>
+                    <button class="btn-delete" onclick="handleProjectInvite('${n.request._id}', 'rejected')"><i class="fa-solid fa-xmark"></i> Decline</button>
                 </div>
             ` : ''}
             ${n.type === 'new_message' ? `

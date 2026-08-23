@@ -470,15 +470,12 @@ const processRequestStatus = async (requestId, status, userId) => {
         await project.save();
     }
 
-    if (request.type === "invite") {
-        await Notification.create({
-            recipient: project.owner,
-            message: status === "accepted" ? `User accepted your invitation to join "${project.title}".` : `User declined your invitation to join "${project.title}".`,
-            type: status === "accepted" ? "request_accepted" : "request_rejected",
-            project: project._id,
-            request: request._id
-        });
-    } else {
+    await Notification.updateMany(
+        { request: request._id, recipient: userId }, 
+        { $set: { read: true } }
+    );
+
+    if (request.type !== "invite") {
         await Notification.create({
             recipient: request.requester,
             message: status === "accepted" ? `Your request to join "${project.title}" has been accepted!` : `Your request to join "${project.title}" was declined.`,
@@ -488,8 +485,6 @@ const processRequestStatus = async (requestId, status, userId) => {
         });
     }
 
-    await Notification.updateMany({ request: request._id }, { $set: { read: true } });
-    
     return request;
 };
 
