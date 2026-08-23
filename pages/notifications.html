@@ -108,6 +108,11 @@ function renderNotifications(notifs) {
                     <button class="btn-delete" onclick="handleProjectInvite('${n._id}', 'reject')"><i class="fa-solid fa-xmark"></i> Decline</button>
                 </div>
             ` : ''}
+            ${n.type === 'new_message' ? `
+                <div class="notification-actions">
+                    <a href="chat.html?user=${n.sender}" class="primary-btn" onclick="markNotificationRead('${n._id}')" style="padding:6px 12px;font-size:12px;text-decoration:none;"><i class="fa-solid fa-reply"></i> Reply</a>
+                </div>
+            ` : ''}
         </div>
     `).join('');
 }

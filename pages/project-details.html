@@ -149,7 +149,7 @@ async function loadProject(projectId) {
         const isMember = (project.members || []).some(m => (m._id || m.id || m) === currentUserId);
         const actionsContainer = document.getElementById('projectActions');
 
-        if (isOwner || user.role === 'admin') {
+        if (isOwner) {
             actionsContainer.innerHTML = `
                 <button class="primary-btn" onclick="openEditProject()"><i class="fa-solid fa-pen-to-square"></i> Edit Project</button>
                 <button class="btn-delete" onclick="deleteProject('${project._id}')"><i class="fa-solid fa-trash"></i> Delete Project</button>

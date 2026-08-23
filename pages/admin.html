@@ -191,9 +191,7 @@ function renderProjectsTable(projects) {
             <td>${p.members?.length || 1}</td>
             <td>${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : 'N/A'}</td>
             <td>
-                <button class="btn-delete" onclick="deleteAdminProject('${p._id}', '${p.title}')">
-                    <i class="fa-solid fa-trash"></i> Delete
-                </button>
+                <!-- Admin cannot delete projects -->
             </td>
         </tr>
     `).join('');
@@ -217,22 +215,7 @@ async function deleteUser(id, name) {
     }
 }
 
-async function deleteAdminProject(id, title) {
-    if (!confirm(`Are you sure you want to delete project "${title}"?`)) return;
-
-    try {
-        const res = await authFetch(`/api/admin/projects/${id}`, { method: 'DELETE' });
-        if (res && res.ok) {
-            showToast(`Project "${title}" deleted.`, 'success');
-            loadAdminData();
-        } else {
-            const err = res ? await res.json() : {};
-            showToast(err.message || 'Failed to delete project', 'error');
-        }
-    } catch (err) {
-        showToast('Network error deleting project', 'error');
-    }
-}
+// Project deletion by admin is disabled based on requirements
 </script>
 </body>
 </html>

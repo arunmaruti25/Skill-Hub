@@ -304,7 +304,7 @@ app.put("/api/projects/:id", authenticateToken, async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
         if (!project) return res.status(404).json({ message: "Project not found" });
-        if (project.owner.toString() !== (req.user.id || req.user._id) && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized project edit" });
+        if (project.owner.toString() !== (req.user.id || req.user._id)) return res.status(403).json({ message: "Unauthorized project edit" });
 
         const { title, description, skills } = req.body;
         if (title) project.title = title.trim();
@@ -319,7 +319,7 @@ app.delete("/api/projects/:id", authenticateToken, async (req, res) => {
     try {
         const project = await Project.findById(req.params.id);
         if (!project) return res.status(404).json({ message: "Project not found" });
-        if (project.owner.toString() !== (req.user.id || req.user._id) && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized project delete" });
+        if (project.owner.toString() !== (req.user.id || req.user._id)) return res.status(403).json({ message: "Unauthorized project delete" });
 
         await Promise.all([Project.findByIdAndDelete(project._id), JoinRequest.deleteMany({ project: project._id }), Notification.deleteMany({ project: project._id })]);
         res.json({ message: "Project deleted successfully" });
@@ -374,7 +374,15 @@ app.post("/api/projects/:projectId/invite", authenticateToken, async (req, res) 
 
         const project = await Project.findById(req.params.projectId);
         if (!project) return res.status(404).json({ message: "Project not found" });
-        if (project.owner.toString() !== inviterId.toString() && req.user.role !== "admin") return res.status(403).json({ message: "Only project owner can invite" });
+        if (project.owner.toString() !== inviterId.toString()) return res.status(403).json({ message: "Only project owner can invite" });
+
+        if (inviterId.toString() === invitee.toString()) return res.status(400).json({ message: "Cannot invite yourself" });
+        if (project.members.some(m => m.toString() === invitee.toString()) || project.owner.toString() === invitee.toString()) {
+            return res.status(400).json({ message: "User is already a member or owner" });
+        }
+
+        const existingInvite = await Notification.findOne({ recipient: invitee, project: project._id, type: "project_invite", read: false });
+        if (existingInvite) return res.status(400).json({ message: "Pending invite already exists" });
 
         const [invitedUser, inviterUser] = await Promise.all([User.findById(invitee), User.findById(inviterId)]);
         if (!invitedUser) return res.status(404).json({ message: "Invited user not found" });
@@ -419,14 +427,14 @@ app.get("/api/requests/received/:userId", authenticateToken, async (req, res) =>
     res.json(requests);
 });
 
-const processRequestStatus = async (requestId, status, userId, userRole) => {
+const processRequestStatus = async (requestId, status, userId) => {
     const request = await JoinRequest.findById(requestId).populate("project");
     if (!request) throw new Error("Request not found");
     if (request.status !== "pending") throw new Error("Request already processed");
 
     const project = await Project.findById(request.project._id || request.project);
     if (!project) throw new Error("Project not found");
-    if (project.owner.toString() !== userId.toString() && userRole !== "admin") throw new Error("Only project owner can manage requests");
+    if (project.owner.toString() !== userId.toString()) throw new Error("Only project owner can manage requests");
 
     request.status = status;
     await request.save();
@@ -450,21 +458,21 @@ app.patch("/api/requests/:requestId", authenticateToken, async (req, res) => {
     try {
         const { status } = req.body;
         if (!["accepted", "rejected"].includes(status)) return res.status(400).json({ message: "Status must be 'accepted' or 'rejected'" });
-        const request = await processRequestStatus(req.params.requestId, status, req.user.id || req.user._id, req.user.role);
+        const request = await processRequestStatus(req.params.requestId, status, req.user.id || req.user._id);
         res.json({ message: `Request ${status} successfully`, request });
     } catch (e) { res.status(400).json({ message: e.message || "Could not process request" }); }
 });
 
 app.put("/api/requests/:requestId/accept", authenticateToken, async (req, res) => {
     try {
-        const request = await processRequestStatus(req.params.requestId, "accepted", req.user.id || req.user._id, req.user.role);
+        const request = await processRequestStatus(req.params.requestId, "accepted", req.user.id || req.user._id);
         res.json({ message: "Request accepted successfully", request });
     } catch (e) { res.status(400).json({ message: e.message || "Could not accept request" }); }
 });
 
 app.put("/api/requests/:requestId/reject", authenticateToken, async (req, res) => {
     try {
-        const request = await processRequestStatus(req.params.requestId, "rejected", req.user.id || req.user._id, req.user.role);
+        const request = await processRequestStatus(req.params.requestId, "rejected", req.user.id || req.user._id);
         res.json({ message: "Request rejected successfully", request });
     } catch (e) { res.status(400).json({ message: e.message || "Could not reject request" }); }
 });
@@ -476,7 +484,7 @@ app.delete("/api/requests/:requestId", authenticateToken, async (req, res) => {
 
         const uid = req.user.id || req.user._id;
         const project = await Project.findById(request.project);
-        if (request.requester.toString() !== uid.toString() && project?.owner.toString() !== uid.toString() && req.user.role !== "admin") {
+        if (request.requester.toString() !== uid.toString() && project?.owner.toString() !== uid.toString()) {
             return res.status(403).json({ message: "Unauthorized to delete this request" });
         }
         await JoinRequest.findByIdAndDelete(request._id);
@@ -547,6 +555,18 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         if (!sUser || !rUser) return res.status(404).json({ message: "User not found" });
 
         const msg = await Message.create({ sender, receiver, message: message.trim() });
+        
+        // Prevent duplicate unread message notifications from the same sender
+        const existingNotif = await Notification.findOne({ recipient: receiver, type: "new_message", sender: sender, read: false });
+        if (!existingNotif) {
+            await Notification.create({
+                recipient: receiver,
+                message: `New message from ${sUser.name}: "${message.length > 20 ? message.substring(0, 20) + '...' : message}"`,
+                type: "new_message",
+                sender: sender
+            });
+        }
+        
         res.status(201).json(await Message.findById(msg._id).populate("sender receiver", POP_USER));
     } catch (e) { res.status(500).json({ message: "Could not send message" }); }
 });
@@ -691,13 +711,7 @@ app.delete("/api/admin/users/:id", authenticateToken, requireAdmin, async (req, 
     } catch (e) { res.status(500).json({ message: "Could not delete user" }); }
 });
 
-app.delete("/api/admin/projects/:id", authenticateToken, requireAdmin, async (req, res) => {
-    try {
-        const pid = req.params.id;
-        await Promise.all([Project.findByIdAndDelete(pid), JoinRequest.deleteMany({ project: pid }), Notification.deleteMany({ project: pid })]);
-        res.json({ message: "Project deleted successfully" });
-    } catch (e) { res.status(500).json({ message: "Could not delete project" }); }
-});
+// Admin cannot delete projects directly per oversight rules
 
 // ================= ERROR & START =================
 app.use((req, res) => res.status(404).json({ message: `Endpoint ${req.method} ${req.originalUrl} not found` }));

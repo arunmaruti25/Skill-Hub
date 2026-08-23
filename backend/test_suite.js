@@ -65,8 +65,7 @@ try {
         "GET /api/admin/stats",
         "GET /api/admin/users",
         "GET /api/admin/messages/:user1/:user2",
-        "DELETE /api/admin/users/:id",
-        "DELETE /api/admin/projects/:id"
+        "DELETE /api/admin/users/:id"
     ];
 
     expectedEndpoints.forEach(ep => {

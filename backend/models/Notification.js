@@ -5,11 +5,12 @@ const notificationSchema = new mongoose.Schema({
     message: { type: String, required: true },
     type: {
         type: String,
-        enum: ["join_request", "request_accepted", "request_rejected", "project_invite"],
+        enum: ["join_request", "request_accepted", "request_rejected", "project_invite", "new_message"],
         required: true
     },
     project: { type: mongoose.Schema.Types.ObjectId, ref: "Project", default: null },
     request: { type: mongoose.Schema.Types.ObjectId, ref: "JoinRequest", default: null },
+    sender: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
     read: { type: Boolean, default: false }
 }, { timestamps: true });
 
