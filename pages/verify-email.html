@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify Email - Skill Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+<div class="auth-page">
+    <div class="auth-box" style="text-align:center;">
+        <a href="../index.html" class="logo" style="justify-content:center;margin-bottom:24px;"><i class="fa-solid fa-users"></i> Skill Hub</a>
+
+        <div id="loadingState">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size:36px;color:#567C8D;margin-bottom:16px;display:block;"></i>
+            <h1 style="font-size:22px;">Verifying your email...</h1>
+            <p>Please wait a moment.</p>
+        </div>
+
+        <div id="successState" style="display:none;">
+            <i class="fa-solid fa-circle-check" style="font-size:48px;color:#22c55e;margin-bottom:16px;display:block;"></i>
+            <h1 style="font-size:22px;color:#2F4156;">Email Verified!</h1>
+            <p style="color:#567C8D;margin:8px 0 24px;">Your account is now active. You can sign in.</p>
+            <a href="login.html" class="primary-btn" style="display:inline-flex;">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </a>
+        </div>
+
+        <div id="errorState" style="display:none;">
+            <i class="fa-solid fa-circle-exclamation" style="font-size:48px;color:#ef4444;margin-bottom:16px;display:block;"></i>
+            <h1 style="font-size:22px;color:#2F4156;" id="errorTitle">Verification Failed</h1>
+            <p style="color:#567C8D;margin:8px 0 20px;" id="errorMsg">The link is invalid or has already been used.</p>
+            <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                <a href="register.html" class="outline-btn"><i class="fa-solid fa-arrow-left"></i> Back to Register</a>
+                <button id="resendBtn" onclick="showResendForm()" class="primary-btn" style="display:none;">
+                    <i class="fa-solid fa-rotate-right"></i> Request New Link
+                </button>
+            </div>
+            <div id="resendForm" style="display:none;margin-top:20px;">
+                <input type="email" id="resendEmail" placeholder="Enter your email" style="width:100%;padding:10px 14px;border:1.5px solid #C8D9E6;border-radius:10px;font-size:13.5px;outline:none;margin-bottom:10px;">
+                <button onclick="resendVerification()" class="primary-btn" style="width:100%;">
+                    <i class="fa-solid fa-paper-plane"></i> Send New Link
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="../js/auth.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("token");
+
+    if (!token) {
+        showState("error", "No Token Found", "No verification token was provided. Please use the link from your email.");
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+        const data = await res.json();
+
+        if (res.ok) {
+            showState("success");
+            setTimeout(() => window.location.href = "login.html", 3000);
+        } else {
+            showState("error", "Verification Failed", data.message, data.expired);
+        }
+    } catch {
+        showState("error", "Network Error", "Could not connect to the server. Please try again.");
+    }
+});
+
+function showState(state, title, msg, showResend) {
+    document.getElementById("loadingState").style.display = "none";
+    document.getElementById("successState").style.display = state === "success" ? "block" : "none";
+    document.getElementById("errorState").style.display = state === "error" ? "block" : "none";
+    if (state === "error") {
+        if (title) document.getElementById("errorTitle").textContent = title;
+        if (msg) document.getElementById("errorMsg").textContent = msg;
+        if (showResend) document.getElementById("resendBtn").style.display = "inline-flex";
+    }
+}
+
+function showResendForm() {
+    document.getElementById("resendForm").style.display = "block";
+    document.getElementById("resendBtn").style.display = "none";
+}
+
+async function resendVerification() {
+    const email = document.getElementById("resendEmail").value.trim().toLowerCase();
+    if (!email) return showToast("Please enter your email address.", "warning");
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email })
+        });
+        const data = await res.json();
+        showToast(data.message, res.ok ? "success" : "error");
+    } catch {
+        showToast("Network error. Please try again.", "error");
+    }
+}
+</script>
+</body>
+</html>

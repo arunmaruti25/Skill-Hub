@@ -3,10 +3,12 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
+const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const User = require("./models/user");
@@ -18,6 +20,30 @@ const Message = require("./models/Message");
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || "skillhub_super_secret_jwt_key_2026";
 const POP_USER = "name email profileImage profession skills bio";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+
+// ================= EMAIL TRANSPORTER =================
+const mailer = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: parseInt(process.env.SMTP_PORT || "587"),
+    secure: process.env.SMTP_PORT === "465",
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+});
+
+async function sendVerificationEmail(email, token) {
+    const link = `${FRONTEND_URL}/pages/verify-email.html?token=${token}`;
+    await mailer.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: email,
+        subject: "Verify your Skill Hub account",
+        html: `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #C8D9E6;border-radius:16px;">
+            <h2 style="color:#2F4156;">Verify your email</h2>
+            <p style="color:#567C8D;">Click the button below to verify your email address and activate your Skill Hub account. This link expires in <strong>24 hours</strong>.</p>
+            <a href="${link}" style="display:inline-block;margin:20px 0;padding:12px 28px;background:#567C8D;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Verify Email</a>
+            <p style="color:#999;font-size:12px;">If you did not create an account, you can safely ignore this email.</p>
+        </div>`
+    });
+}
 
 // ================= STORAGE & MIDDLEWARE =================
 const uploadDir = path.join(__dirname, "uploads");
@@ -48,13 +74,22 @@ const authLimiter = rateLimit({
     message: { message: "Too many authentication attempts. Please try again later." }
 });
 
+const resendLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 3,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many resend attempts. Please wait before trying again." }
+});
+
 // Helper: Format User
 const formatUser = u => ({
     id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email,
     profession: u.profession || "", bio: u.bio || "", location: u.location || "",
     experience: u.experience || "Beginner", availability: u.availability || "Available",
     skills: u.skills || [], github: u.github || "", linkedin: u.linkedin || "",
-    profileImage: u.profileImage || "", role: u.role || "user", createdAt: u.createdAt
+    profileImage: u.profileImage || "", role: u.role || "user",
+    emailVerified: u.emailVerified || false, createdAt: u.createdAt
 });
 
 const generateToken = u => jwt.sign({ id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email, role: u.role || "user" }, JWT_SECRET, { expiresIn: "7d" });
@@ -93,12 +128,39 @@ const handleRegister = async (req, res) => {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return res.status(400).json({ message: "Please provide a valid email address" });
         if (password.length < 6) return res.status(400).json({ message: "Password must be at least 6 characters long" });
 
-        const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
-        if (existingUser) return res.status(400).json({ message: "Email is already registered. Please sign in." });
+        const normalizedEmail = email.toLowerCase().trim();
+        const existingUser = await User.findOne({ email: normalizedEmail });
+        if (existingUser) {
+            // If already registered but not verified, suggest resend
+            if (!existingUser.emailVerified) return res.status(400).json({ message: "Email is registered but not verified. Please check your inbox or resend verification.", needsVerification: true });
+            return res.status(400).json({ message: "Email is already registered. Please sign in." });
+        }
 
-        const user = await User.create({ name: name.trim(), email: email.toLowerCase().trim(), password: await bcrypt.hash(password, 10), role: "user" });
-        res.status(201).json({ message: "Account created successfully!", token: generateToken(user), user: formatUser(user) });
-    } catch (e) { res.status(500).json({ message: "Server error during registration" }); }
+        const verifyToken = crypto.randomBytes(32).toString("hex");
+        const verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+
+        const user = await User.create({
+            name: name.trim(),
+            email: normalizedEmail,
+            password: await bcrypt.hash(password, 10),
+            role: "user",
+            emailVerified: false,
+            verifyToken,
+            verifyTokenExpiry
+        });
+
+        // Send verification email (non-blocking — failure still registers the account)
+        try {
+            await sendVerificationEmail(normalizedEmail, verifyToken);
+        } catch (emailErr) {
+            console.error("Verification email send failed:", emailErr.message);
+        }
+
+        res.status(201).json({ message: "Account created! Please check your email to verify your account before signing in." });
+    } catch (e) {
+        console.error("Register error:", e);
+        res.status(500).json({ message: "Server error during registration" });
+    }
 };
 
 const handleLogin = async (req, res) => {
@@ -107,6 +169,12 @@ const handleLogin = async (req, res) => {
         if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
         const user = await User.findOne({ email: email.toLowerCase().trim() });
         if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ message: "Invalid email or password" });
+
+        // Block login until email is verified
+        if (!user.emailVerified) {
+            return res.status(403).json({ message: "Please verify your email before signing in.", needsVerification: true, email: user.email });
+        }
+
         res.json({ message: "Login successful", token: generateToken(user), user: formatUser(user) });
     } catch (e) { res.status(500).json({ message: "Server error during login" }); }
 };
@@ -136,6 +204,60 @@ app.post("/api/reset-password", authLimiter, handlePasswordReset);
 app.post("/api/auth/reset-password", authLimiter, handlePasswordReset);
 app.post("/api/auth/forgot-password", authLimiter, handlePasswordReset);
 
+// Email Verification
+app.get("/api/auth/verify-email", async (req, res) => {
+    try {
+        const { token } = req.query;
+        if (!token) return res.status(400).json({ message: "Verification token is required." });
+
+        const user = await User.findOne({ verifyToken: token });
+        if (!user) return res.status(400).json({ message: "Invalid or already used verification link." });
+        if (user.emailVerified) return res.status(400).json({ message: "Email is already verified. Please sign in." });
+        if (!user.verifyTokenExpiry || user.verifyTokenExpiry < new Date()) {
+            return res.status(400).json({ message: "Verification link has expired. Please request a new one.", expired: true });
+        }
+
+        user.emailVerified = true;
+        user.verifyToken = null;
+        user.verifyTokenExpiry = null;
+        await user.save();
+
+        res.json({ message: "Email verified successfully! You can now sign in." });
+    } catch (e) {
+        console.error("Verify email error:", e);
+        res.status(500).json({ message: "Server error during email verification." });
+    }
+});
+
+// Resend Verification — rate limited to 3 per 15 min per IP
+app.post("/api/auth/resend-verification", resendLimiter, async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ message: "Email is required." });
+
+        const user = await User.findOne({ email: email.toLowerCase().trim() });
+        if (!user) return res.status(404).json({ message: "No account found with this email." });
+        if (user.emailVerified) return res.status(400).json({ message: "Email is already verified. Please sign in." });
+
+        const verifyToken = crypto.randomBytes(32).toString("hex");
+        user.verifyToken = verifyToken;
+        user.verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
+        await user.save();
+
+        try {
+            await sendVerificationEmail(user.email, verifyToken);
+        } catch (emailErr) {
+            console.error("Resend email failed:", emailErr.message);
+            return res.status(500).json({ message: "Failed to send verification email. Please try again." });
+        }
+
+        res.json({ message: "Verification email sent! Please check your inbox." });
+    } catch (e) {
+        console.error("Resend verification error:", e);
+        res.status(500).json({ message: "Server error." });
+    }
+});
+
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id || req.user._id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -161,13 +283,13 @@ app.get("/api/users", optionalAuth, async (req, res) => {
             query.$or = [{ name: regex }, { profession: regex }, { bio: regex }, { skills: regex }];
         }
         if (skill) query.skills = { $in: [new RegExp(`^${skill.trim()}$`, "i")] };
-        const users = await User.find(query).select("-password").sort({ name: 1 });
+        const users = await User.find(query).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt").sort({ name: 1 });
         res.json(users.map(formatUser));
     } catch (e) { res.status(500).json({ message: "Could not load users" }); }
 });
 
 const getProfileHandler = async (req, res) => {
-    const user = await User.findById(req.params.id).select("-password");
+    const user = await User.findById(req.params.id).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(formatUser(user));
 };
@@ -177,15 +299,28 @@ app.get("/api/users/:id", getProfileHandler);
 const updateProfileHandler = async (req, res) => {
     try {
         const targetId = req.params.id;
-        if (req.user && req.user.id !== targetId && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized profile update" });
+        const requesterId = req.user.id || req.user._id;
+
+        // Only the profile owner can update their own profile (admin cannot modify profiles via this endpoint for oversight)
+        // Admin legitimate edit is preserved — but admin CANNOT change email/password via oversight.
+        // The existing behavior: admin CAN edit profiles (legitimate moderation). We enforce: password/verifyToken never touched here.
+        if (requesterId !== targetId && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized profile update" });
+        }
 
         const fields = ["name", "profession", "bio", "location", "experience", "availability", "github", "linkedin"];
         const updateData = {};
         fields.forEach(f => { if (req.body[f] !== undefined) updateData[f] = typeof req.body[f] === "string" ? req.body[f].trim() : req.body[f]; });
         if (req.body.skills !== undefined) updateData.skills = Array.isArray(req.body.skills) ? req.body.skills : [];
+        // Only allow admin to update email (legitimate admin moderation)
         if (req.body.email && req.user?.role === "admin") updateData.email = req.body.email.toLowerCase().trim();
+        // Never allow password/verifyToken/emailVerified to be set via profile update
+        delete updateData.password;
+        delete updateData.verifyToken;
+        delete updateData.verifyTokenExpiry;
+        delete updateData.emailVerified;
 
-        const user = await User.findByIdAndUpdate(targetId, updateData, { new: true, runValidators: true }).select("-password");
+        const user = await User.findByIdAndUpdate(targetId, updateData, { new: true, runValidators: true }).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt");
         if (!user) return res.status(404).json({ message: "User not found" });
         res.json({ message: "Profile updated successfully", user: formatUser(user) });
     } catch (e) { res.status(500).json({ message: "Server error updating profile" }); }
@@ -271,7 +406,7 @@ app.get("/api/projects/:id", optionalAuth, async (req, res) => {
 app.post("/api/projects", authenticateToken, async (req, res) => {
     try {
         const { title, description, skills } = req.body;
-        const ownerId = req.user.id || req.user._id || req.body.owner;
+        const ownerId = req.user.id || req.user._id; // Always from JWT, never from body
         if (!title || !description) return res.status(400).json({ message: "Title and description are required" });
 
         const pSkills = Array.isArray(skills) ? skills : (typeof skills === "string" ? skills.split(",").map(s => s.trim()).filter(Boolean) : []);
@@ -309,7 +444,7 @@ app.delete("/api/projects/:id", authenticateToken, async (req, res) => {
 const handleJoinRequestCreation = async (req, res) => {
     try {
         const projectId = req.params.projectId || req.params.id;
-        const requesterId = req.user?.id || req.user?._id || req.body.requester;
+        const requesterId = req.user?.id || req.user?._id; // Always from JWT
         if (!requesterId) return res.status(401).json({ message: "Requester authentication required" });
 
         const project = await Project.findById(projectId);
@@ -376,7 +511,7 @@ app.get("/api/projects/:projectId/requests", authenticateToken, async (req, res)
 // ================= REQUESTS =================
 app.get("/api/requests", authenticateToken, async (req, res) => {
     try {
-        const uid = req.user.id || req.user._id;
+        const uid = req.user.id || req.user._id; // Always from JWT
         const type = req.query.type || "received";
         if (type === "sent") {
             const requests = await JoinRequest.find({ requester: uid }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
@@ -466,7 +601,7 @@ app.delete("/api/requests/:requestId", authenticateToken, async (req, res) => {
 
 // ================= NOTIFICATIONS =================
 const getNotificationsHandler = async (req, res) => {
-    const uid = req.params.userId || req.user?.id || req.user?._id;
+    const uid = req.user?.id || req.user?._id; // Always from JWT, not params
     if (!uid) return res.status(401).json({ message: "User ID required" });
     const notifications = await Notification.find({ recipient: uid }).populate("project", "title").populate("request").sort({ createdAt: -1 });
     res.json(notifications);
@@ -481,7 +616,7 @@ app.put("/api/notifications/:id/read", authenticateToken, async (req, res) => {
 });
 
 const markAllReadHandler = async (req, res) => {
-    const uid = req.params.userId || req.user?.id || req.user?._id;
+    const uid = req.user?.id || req.user?._id; // Always from JWT
     if (!uid) return res.status(401).json({ message: "User ID required" });
     await Notification.updateMany({ recipient: uid, read: false }, { $set: { read: true } });
     res.json({ message: "All notifications marked as read" });
@@ -514,12 +649,13 @@ app.put("/api/notifications/:notificationId/reject-invite", authenticateToken, a
     res.json({ message: "Invitation declined" });
 });
 
-// ================= MESSAGES =================
+// ================= MESSAGES (PRIVATE — IDOR PROTECTED) =================
 app.post("/api/messages", authenticateToken, async (req, res) => {
     try {
-        const sender = req.user.id || req.user._id || req.body.sender;
+        // Sender is ALWAYS derived from verified JWT — never trust req.body.sender
+        const sender = req.user.id || req.user._id;
         const { receiver, message } = req.body;
-        if (!sender || !receiver || !message?.trim()) return res.status(400).json({ message: "Sender, receiver, and message text are required" });
+        if (!receiver || !message?.trim()) return res.status(400).json({ message: "Receiver and message text are required" });
         if (sender.toString() === receiver.toString()) return res.status(400).json({ message: "You cannot message yourself" });
 
         const [sUser, rUser] = await Promise.all([User.findById(sender), User.findById(receiver)]);
@@ -534,23 +670,39 @@ app.get("/api/messages/:user1/:user2", authenticateToken, async (req, res) => {
     try {
         const { user1, user2 } = req.params;
         const currentUserId = req.user.id || req.user._id;
-        if (currentUserId !== user1 && currentUserId !== user2 && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized" });
+
+        // Security: only participants or admin can read the conversation
+        if (currentUserId !== user1 && currentUserId !== user2 && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Access denied. You are not a participant in this conversation." });
+        }
 
         const messages = await Message.find({ $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }] }).populate("sender receiver", POP_USER).sort({ createdAt: 1 });
-        await Message.updateMany({ sender: user2 === currentUserId ? user1 : user2, receiver: currentUserId, read: false }, { $set: { read: true } });
+
+        // Only mark messages as read if requester is a participant (not admin oversight)
+        if (req.user.role !== "admin") {
+            const otherId = currentUserId === user1 ? user2 : user1;
+            await Message.updateMany({ sender: otherId, receiver: currentUserId, read: false }, { $set: { read: true } });
+        }
+
         res.json(messages);
     } catch (e) { res.status(500).json({ message: "Could not load messages" }); }
 });
 
 app.put("/api/messages/read/:userId/:otherUserId", authenticateToken, async (req, res) => {
+    // Enforce: only the recipient (userId) can mark their messages as read — not anyone else
+    const currentUserId = req.user.id || req.user._id;
+    if (currentUserId !== req.params.userId && req.user.role !== "admin") {
+        return res.status(403).json({ message: "Access denied." });
+    }
     await Message.updateMany({ sender: req.params.otherUserId, receiver: req.params.userId, read: false }, { $set: { read: true } });
     res.json({ message: "Messages marked as read" });
 });
 
 const getConversationsHandler = async (req, res) => {
     try {
-        const uid = req.params.userId || req.user?.id || req.user?._id;
-        if (!uid) return res.status(401).json({ message: "User ID required" });
+        // Always derive from JWT — never trust req.params.userId for the authenticated user
+        const uid = req.user?.id || req.user?._id;
+        if (!uid) return res.status(401).json({ message: "Authentication required" });
 
         const messages = await Message.find({ $or: [{ sender: uid }, { receiver: uid }] }).populate("sender receiver", POP_USER).sort({ createdAt: -1 });
         const conversations = [];
@@ -584,7 +736,7 @@ app.get("/api/message-inbox/:userId", authenticateToken, getConversationsHandler
 app.get("/api/dashboard/:userId", authenticateToken, async (req, res) => {
     try {
         const uid = req.params.userId || req.user.id;
-        const user = await User.findById(uid).select("-password");
+        const user = await User.findById(uid).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt");
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const [projects, teammates, myProjects, pendingRequests] = await Promise.all([
@@ -615,9 +767,20 @@ app.get("/api/admin/stats", authenticateToken, requireAdmin, async (req, res) =>
 
 app.get("/api/admin/users", authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const users = await User.find().select("-password").sort({ createdAt: -1 });
+        const users = await User.find().select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt").sort({ createdAt: -1 });
         res.json(users.map(formatUser));
     } catch (e) { res.status(500).json({ message: "Could not load users" }); }
+});
+
+// Admin read-only chat oversight — strictly GET, no modification endpoints
+app.get("/api/admin/messages/:user1/:user2", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const { user1, user2 } = req.params;
+        const messages = await Message.find({
+            $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }]
+        }).populate("sender receiver", POP_USER).sort({ createdAt: 1 });
+        res.json(messages);
+    } catch (e) { res.status(500).json({ message: "Could not load messages for oversight" }); }
 });
 
 app.delete("/api/admin/users/:id", authenticateToken, requireAdmin, async (req, res) => {
