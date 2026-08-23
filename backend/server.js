@@ -3,12 +3,10 @@ const mongoose = require("mongoose");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const rateLimit = require("express-rate-limit");
-const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 const User = require("./models/user");
@@ -20,30 +18,6 @@ const Message = require("./models/Message");
 const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || "skillhub_super_secret_jwt_key_2026";
 const POP_USER = "name email profileImage profession skills bio";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
-
-// ================= EMAIL TRANSPORTER =================
-const mailer = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_PORT === "465",
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
-});
-
-async function sendVerificationEmail(email, token) {
-    const link = `${FRONTEND_URL}/pages/verify-email.html?token=${token}`;
-    await mailer.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: email,
-        subject: "Verify your Skill Hub account",
-        html: `<div style="font-family:sans-serif;max-width:480px;margin:auto;padding:32px;border:1px solid #C8D9E6;border-radius:16px;">
-            <h2 style="color:#2F4156;">Verify your email</h2>
-            <p style="color:#567C8D;">Click the button below to verify your email address and activate your Skill Hub account. This link expires in <strong>24 hours</strong>.</p>
-            <a href="${link}" style="display:inline-block;margin:20px 0;padding:12px 28px;background:#567C8D;color:#fff;text-decoration:none;border-radius:10px;font-weight:700;">Verify Email</a>
-            <p style="color:#999;font-size:12px;">If you did not create an account, you can safely ignore this email.</p>
-        </div>`
-    });
-}
 
 // ================= STORAGE & MIDDLEWARE =================
 const uploadDir = path.join(__dirname, "uploads");
@@ -74,22 +48,13 @@ const authLimiter = rateLimit({
     message: { message: "Too many authentication attempts. Please try again later." }
 });
 
-const resendLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 3,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { message: "Too many resend attempts. Please wait before trying again." }
-});
-
 // Helper: Format User
 const formatUser = u => ({
     id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email,
     profession: u.profession || "", bio: u.bio || "", location: u.location || "",
     experience: u.experience || "Beginner", availability: u.availability || "Available",
     skills: u.skills || [], github: u.github || "", linkedin: u.linkedin || "",
-    profileImage: u.profileImage || "", role: u.role || "user",
-    emailVerified: u.emailVerified || false, createdAt: u.createdAt
+    profileImage: u.profileImage || "", role: u.role || "user", createdAt: u.createdAt
 });
 
 const generateToken = u => jwt.sign({ id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email, role: u.role || "user" }, JWT_SECRET, { expiresIn: "7d" });
@@ -130,33 +95,16 @@ const handleRegister = async (req, res) => {
 
         const normalizedEmail = email.toLowerCase().trim();
         const existingUser = await User.findOne({ email: normalizedEmail });
-        if (existingUser) {
-            // If already registered but not verified, suggest resend
-            if (!existingUser.emailVerified) return res.status(400).json({ message: "Email is registered but not verified. Please check your inbox or resend verification.", needsVerification: true });
-            return res.status(400).json({ message: "Email is already registered. Please sign in." });
-        }
-
-        const verifyToken = crypto.randomBytes(32).toString("hex");
-        const verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+        if (existingUser) return res.status(400).json({ message: "Email is already registered. Please sign in." });
 
         const user = await User.create({
             name: name.trim(),
             email: normalizedEmail,
             password: await bcrypt.hash(password, 10),
-            role: "user",
-            emailVerified: false,
-            verifyToken,
-            verifyTokenExpiry
+            role: "user"
         });
 
-        // Send verification email (non-blocking — failure still registers the account)
-        try {
-            await sendVerificationEmail(normalizedEmail, verifyToken);
-        } catch (emailErr) {
-            console.error("Verification email send failed:", emailErr.message);
-        }
-
-        res.status(201).json({ message: "Account created! Please check your email to verify your account before signing in." });
+        res.status(201).json({ message: "Account created successfully!", token: generateToken(user), user: formatUser(user) });
     } catch (e) {
         console.error("Register error:", e);
         res.status(500).json({ message: "Server error during registration" });
@@ -169,11 +117,6 @@ const handleLogin = async (req, res) => {
         if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
         const user = await User.findOne({ email: email.toLowerCase().trim() });
         if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ message: "Invalid email or password" });
-
-        // Block login until email is verified
-        if (!user.emailVerified) {
-            return res.status(403).json({ message: "Please verify your email before signing in.", needsVerification: true, email: user.email });
-        }
 
         res.json({ message: "Login successful", token: generateToken(user), user: formatUser(user) });
     } catch (e) { res.status(500).json({ message: "Server error during login" }); }
@@ -204,60 +147,6 @@ app.post("/api/reset-password", authLimiter, handlePasswordReset);
 app.post("/api/auth/reset-password", authLimiter, handlePasswordReset);
 app.post("/api/auth/forgot-password", authLimiter, handlePasswordReset);
 
-// Email Verification
-app.get("/api/auth/verify-email", async (req, res) => {
-    try {
-        const { token } = req.query;
-        if (!token) return res.status(400).json({ message: "Verification token is required." });
-
-        const user = await User.findOne({ verifyToken: token });
-        if (!user) return res.status(400).json({ message: "Invalid or already used verification link." });
-        if (user.emailVerified) return res.status(400).json({ message: "Email is already verified. Please sign in." });
-        if (!user.verifyTokenExpiry || user.verifyTokenExpiry < new Date()) {
-            return res.status(400).json({ message: "Verification link has expired. Please request a new one.", expired: true });
-        }
-
-        user.emailVerified = true;
-        user.verifyToken = null;
-        user.verifyTokenExpiry = null;
-        await user.save();
-
-        res.json({ message: "Email verified successfully! You can now sign in." });
-    } catch (e) {
-        console.error("Verify email error:", e);
-        res.status(500).json({ message: "Server error during email verification." });
-    }
-});
-
-// Resend Verification — rate limited to 3 per 15 min per IP
-app.post("/api/auth/resend-verification", resendLimiter, async (req, res) => {
-    try {
-        const { email } = req.body;
-        if (!email) return res.status(400).json({ message: "Email is required." });
-
-        const user = await User.findOne({ email: email.toLowerCase().trim() });
-        if (!user) return res.status(404).json({ message: "No account found with this email." });
-        if (user.emailVerified) return res.status(400).json({ message: "Email is already verified. Please sign in." });
-
-        const verifyToken = crypto.randomBytes(32).toString("hex");
-        user.verifyToken = verifyToken;
-        user.verifyTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        await user.save();
-
-        try {
-            await sendVerificationEmail(user.email, verifyToken);
-        } catch (emailErr) {
-            console.error("Resend email failed:", emailErr.message);
-            return res.status(500).json({ message: "Failed to send verification email. Please try again." });
-        }
-
-        res.json({ message: "Verification email sent! Please check your inbox." });
-    } catch (e) {
-        console.error("Resend verification error:", e);
-        res.status(500).json({ message: "Server error." });
-    }
-});
-
 app.get("/api/auth/me", authenticateToken, async (req, res) => {
     const user = await User.findById(req.user.id || req.user._id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
@@ -283,13 +172,13 @@ app.get("/api/users", optionalAuth, async (req, res) => {
             query.$or = [{ name: regex }, { profession: regex }, { bio: regex }, { skills: regex }];
         }
         if (skill) query.skills = { $in: [new RegExp(`^${skill.trim()}$`, "i")] };
-        const users = await User.find(query).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt").sort({ name: 1 });
+        const users = await User.find(query).select("-password").sort({ name: 1 });
         res.json(users.map(formatUser));
     } catch (e) { res.status(500).json({ message: "Could not load users" }); }
 });
 
 const getProfileHandler = async (req, res) => {
-    const user = await User.findById(req.params.id).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt");
+    const user = await User.findById(req.params.id).select("-password");
     if (!user) return res.status(404).json({ message: "User not found" });
     res.json(formatUser(user));
 };
@@ -302,8 +191,7 @@ const updateProfileHandler = async (req, res) => {
         const requesterId = req.user.id || req.user._id;
 
         // Only the profile owner can update their own profile (admin cannot modify profiles via this endpoint for oversight)
-        // Admin legitimate edit is preserved — but admin CANNOT change email/password via oversight.
-        // The existing behavior: admin CAN edit profiles (legitimate moderation). We enforce: password/verifyToken never touched here.
+        // The existing behavior: admin CAN edit profiles (legitimate moderation). We enforce: password never touched here.
         if (requesterId !== targetId && req.user.role !== "admin") {
             return res.status(403).json({ message: "Unauthorized profile update" });
         }
@@ -314,13 +202,10 @@ const updateProfileHandler = async (req, res) => {
         if (req.body.skills !== undefined) updateData.skills = Array.isArray(req.body.skills) ? req.body.skills : [];
         // Only allow admin to update email (legitimate admin moderation)
         if (req.body.email && req.user?.role === "admin") updateData.email = req.body.email.toLowerCase().trim();
-        // Never allow password/verifyToken/emailVerified to be set via profile update
+        // Never allow password to be set via profile update
         delete updateData.password;
-        delete updateData.verifyToken;
-        delete updateData.verifyTokenExpiry;
-        delete updateData.emailVerified;
 
-        const user = await User.findByIdAndUpdate(targetId, updateData, { new: true, runValidators: true }).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt");
+        const user = await User.findByIdAndUpdate(targetId, updateData, { new: true, runValidators: true }).select("-password");
         if (!user) return res.status(404).json({ message: "User not found" });
         res.json({ message: "Profile updated successfully", user: formatUser(user) });
     } catch (e) { res.status(500).json({ message: "Server error updating profile" }); }
@@ -736,7 +621,7 @@ app.get("/api/message-inbox/:userId", authenticateToken, getConversationsHandler
 app.get("/api/dashboard/:userId", authenticateToken, async (req, res) => {
     try {
         const uid = req.params.userId || req.user.id;
-        const user = await User.findById(uid).select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt");
+        const user = await User.findById(uid).select("-password");
         if (!user) return res.status(404).json({ message: "User not found" });
 
         const [projects, teammates, myProjects, pendingRequests] = await Promise.all([
@@ -767,7 +652,7 @@ app.get("/api/admin/stats", authenticateToken, requireAdmin, async (req, res) =>
 
 app.get("/api/admin/users", authenticateToken, requireAdmin, async (req, res) => {
     try {
-        const users = await User.find().select("-password -verifyToken -verifyTokenExpiry -resendVerifyAt").sort({ createdAt: -1 });
+        const users = await User.find().select("-password").sort({ createdAt: -1 });
         res.json(users.map(formatUser));
     } catch (e) { res.status(500).json({ message: "Could not load users" }); }
 });

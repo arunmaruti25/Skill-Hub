@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
 
 let passed = 0;
 let failed = 0;
@@ -36,21 +35,8 @@ try {
     assert(!bcrypt.compareSync("wrongPassword", hash), "Bcrypt rejects incorrect password");
 } catch (err) { assert(false, `Bcrypt test failed: ${err.message}`); }
 
-// TEST 3: Crypto token generation (email verification)
-console.log("\n3. Testing Crypto Verification Token Generation...");
-try {
-    const token1 = crypto.randomBytes(32).toString("hex");
-    const token2 = crypto.randomBytes(32).toString("hex");
-    assert(token1.length === 64, "Verification token has correct length (64 hex chars)");
-    assert(token1 !== token2, "Each verification token is unique");
-    const expiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    assert(expiry > new Date(), "Verification token expiry is in the future");
-    const expired = new Date(Date.now() - 1000);
-    assert(expired < new Date(), "Expired token correctly identified");
-} catch (err) { assert(false, `Crypto test failed: ${err.message}`); }
-
-// TEST 4: Backend Server & Express Endpoints
-console.log("\n4. Testing Express App Route Definitions...");
+// TEST 3: Backend Server & Express Endpoints
+console.log("\n3. Testing Express App Route Definitions...");
 try {
     process.env.NODE_ENV = "test";
     const serverFile = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
@@ -59,8 +45,6 @@ try {
         "POST /api/register",
         "POST /api/login",
         "POST /api/reset-password",
-        "GET /api/auth/verify-email",
-        "POST /api/auth/resend-verification",
         "GET /api/skills",
         "GET /api/users",
         "GET /api/profile/:id",
@@ -92,18 +76,37 @@ try {
     });
 } catch (err) { assert(false, `Express app route test failed: ${err.message}`); }
 
+// TEST 4: Email Verification Removed (Static Analysis)
+console.log("\n4. Testing Email Verification is Fully Removed...");
+try {
+    const serverFile = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
+
+    assert(!serverFile.includes("nodemailer"), "nodemailer not imported in server.js");
+    assert(!serverFile.includes("sendVerificationEmail"), "sendVerificationEmail function removed");
+    assert(!serverFile.includes("verifyToken"), "verifyToken removed from server.js");
+    assert(!serverFile.includes("verifyTokenExpiry"), "verifyTokenExpiry removed from server.js");
+    assert(!serverFile.includes("emailVerified"), "emailVerified removed from server.js");
+    assert(!serverFile.includes("needsVerification"), "needsVerification response removed");
+    assert(!serverFile.includes("resend-verification"), "resend-verification route removed");
+    assert(!serverFile.includes("/api/auth/verify-email"), "verify-email route removed");
+
+    const modelFile = fs.readFileSync(path.join(__dirname, 'models', 'user.js'), 'utf8');
+    assert(!modelFile.includes("emailVerified"), "User model: emailVerified field removed");
+    assert(!modelFile.includes("verifyToken"), "User model: verifyToken field removed");
+    assert(!modelFile.includes("verifyTokenExpiry"), "User model: verifyTokenExpiry field removed");
+    assert(!modelFile.includes("resendVerifyAt"), "User model: resendVerifyAt field removed");
+
+    const pkgFile = fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8');
+    assert(!pkgFile.includes("nodemailer"), "nodemailer removed from package.json dependencies");
+} catch (err) { assert(false, `Email verification removal test failed: ${err.message}`); }
+
 // TEST 5: Security Logic Verification (Static Analysis)
 console.log("\n5. Testing Security Logic in server.js...");
 try {
     const serverFile = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 
-    // Email verification
-    assert(serverFile.includes("emailVerified"), "Server checks emailVerified before login");
-    assert(serverFile.includes("verifyToken"), "Server uses verifyToken for email verification");
-    assert(serverFile.includes("verifyTokenExpiry"), "Server checks token expiry");
-    assert(serverFile.includes("needsVerification"), "Server returns needsVerification flag");
-    assert(serverFile.includes("sendVerificationEmail"), "Server sends verification email");
-    assert(serverFile.includes("crypto.randomBytes"), "Server uses cryptographically secure tokens");
+    // Registration returns token immediately (direct login)
+    assert(serverFile.includes("token: generateToken(user)") && serverFile.includes("status(201)"), "Register returns token on 201 (direct auto-login)");
 
     // Chat IDOR protection
     assert(serverFile.includes('const sender = req.user.id || req.user._id'), "Message sender always from JWT, not body");
@@ -117,11 +120,9 @@ try {
     assert(!serverFile.includes('app.delete("/api/admin/messages'), "No admin DELETE message endpoint (read-only)");
 
     // Sensitive fields never exposed
-    assert(serverFile.includes('select("-password -verifyToken'), "Sensitive fields excluded from user queries");
+    assert(serverFile.includes('select("-password")'), "Password excluded from user queries");
 
     // Conversations always from JWT
-    // The conversations handler must use req.user (JWT) not req.params for the authenticated user's ID
-    // Check that the handler function uses req.user and does NOT fall back to req.params.userId
     assert(serverFile.includes("const uid = req.user?.id || req.user?._id"), "Conversations handler derives uid from JWT not URL params");
 
 } catch (err) { assert(false, `Security logic test failed: ${err.message}`); }
@@ -146,20 +147,20 @@ htmlFiles.forEach(file => {
     assert(fs.existsSync(path.join(rootDir, 'css', 'style.css')), `${filename}: css/style.css exists`);
 });
 
-// TEST 7: verify-email.html exists
-console.log("\n7. Testing New Security Pages...");
-assert(fs.existsSync(path.join(pagesDir, 'verify-email.html')), "verify-email.html page exists");
-const verifyPage = fs.readFileSync(path.join(pagesDir, 'verify-email.html'), 'utf8');
-assert(verifyPage.includes('/api/auth/verify-email'), "verify-email.html calls correct backend endpoint");
-assert(verifyPage.includes('resend'), "verify-email.html includes resend functionality");
+// TEST 7: Auth Flow Pages
+console.log("\n7. Testing Auth Flow Pages...");
+
+assert(!fs.existsSync(path.join(pagesDir, 'verify-email.html')), "verify-email.html page removed");
 
 const loginPage = fs.readFileSync(path.join(pagesDir, 'login.html'), 'utf8');
-assert(loginPage.includes('needsVerification'), "login.html handles needsVerification response");
-assert(loginPage.includes('resendVerification'), "login.html has resend verification function");
+assert(!loginPage.includes('needsVerification'), "login.html: needsVerification branch removed");
+assert(!loginPage.includes('resendVerification'), "login.html: resendVerification function removed");
+assert(!loginPage.includes('verifyBanner'), "login.html: verifyBanner element removed");
 
 const registerPage = fs.readFileSync(path.join(pagesDir, 'register.html'), 'utf8');
-assert(registerPage.includes('verifyNotice'), "register.html shows email verification notice");
-assert(!registerPage.includes('setAuthSession(result.token'), "register.html does NOT auto-login (requires verification)");
+assert(!registerPage.includes('verifyNotice'), "register.html: verifyNotice element removed");
+assert(registerPage.includes('setAuthSession(result.token'), "register.html: auto-login on successful registration");
+assert(!registerPage.includes('resendVerification'), "register.html: resendVerification function removed");
 
 // TEST 8: CSS Variable Palette
 console.log("\n8. Testing CSS Variable Palette...");
@@ -171,14 +172,20 @@ try {
     });
 } catch (err) { assert(false, `CSS test failed: ${err.message}`); }
 
-// TEST 9: User Model has verification fields
+// TEST 9: User Model Schema (verification fields absent)
 console.log("\n9. Testing User Model Schema...");
 try {
     const modelFile = fs.readFileSync(path.join(__dirname, 'models', 'user.js'), 'utf8');
-    assert(modelFile.includes('emailVerified'), "User model has emailVerified field");
-    assert(modelFile.includes('verifyToken'), "User model has verifyToken field");
-    assert(modelFile.includes('verifyTokenExpiry'), "User model has verifyTokenExpiry field");
-    assert(modelFile.includes('resendVerifyAt'), "User model has resendVerifyAt field");
+    // Core fields must be present
+    assert(modelFile.includes('name'), "User model has name field");
+    assert(modelFile.includes('email'), "User model has email field");
+    assert(modelFile.includes('password'), "User model has password field");
+    assert(modelFile.includes('role'), "User model has role field");
+    // Verification fields must be absent
+    assert(!modelFile.includes('emailVerified'), "User model: emailVerified absent");
+    assert(!modelFile.includes('verifyToken'), "User model: verifyToken absent");
+    assert(!modelFile.includes('verifyTokenExpiry'), "User model: verifyTokenExpiry absent");
+    assert(!modelFile.includes('resendVerifyAt'), "User model: resendVerifyAt absent");
 } catch (err) { assert(false, `User model test failed: ${err.message}`); }
 
 console.log("\n========================================================");
