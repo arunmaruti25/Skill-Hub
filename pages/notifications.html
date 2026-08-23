@@ -104,8 +104,8 @@ function renderNotifications(notifs) {
 
             ${n.type === 'project_invite' ? `
                 <div class="notification-actions">
-                    <button class="accept-btn" onclick="handleProjectInvite('${n._id}', 'accept')"><i class="fa-solid fa-check"></i> Accept Invitation</button>
-                    <button class="btn-delete" onclick="handleProjectInvite('${n._id}', 'reject')"><i class="fa-solid fa-xmark"></i> Decline</button>
+                    <button class="accept-btn" onclick="handleProjectInvite('${n.request?._id || n.request}', 'accepted')"><i class="fa-solid fa-check"></i> Accept Invitation</button>
+                    <button class="btn-delete" onclick="handleProjectInvite('${n.request?._id || n.request}', 'rejected')"><i class="fa-solid fa-xmark"></i> Decline</button>
                 </div>
             ` : ''}
             ${n.type === 'new_message' ? `
@@ -142,15 +142,17 @@ async function markAllNotificationsRead() {
     }
 }
 
-async function handleProjectInvite(notificationId, action) {
+async function handleProjectInvite(requestId, action) {
+    if (!requestId || requestId === 'undefined') {
+        return showToast('Invalid request associated with this invite.', 'error');
+    }
     try {
-        const endpoint = action === 'accept'
-            ? `/api/notifications/${notificationId}/accept-invite`
-            : `/api/notifications/${notificationId}/reject-invite`;
-
-        const res = await authFetch(endpoint, { method: 'PUT' });
+        const res = await authFetch(`/api/requests/${requestId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: action })
+        });
         if (res && res.ok) {
-            showToast(`Invitation ${action === 'accept' ? 'accepted' : 'declined'}.`, 'success');
+            showToast(`Invitation ${action === 'accepted' ? 'accepted' : 'declined'}.`, 'success');
             loadNotifications();
             updateSidebarBadges();
         } else {

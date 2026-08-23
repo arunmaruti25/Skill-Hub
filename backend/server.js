@@ -381,13 +381,21 @@ app.post("/api/projects/:projectId/invite", authenticateToken, async (req, res) 
             return res.status(400).json({ message: "User is already a member or owner" });
         }
 
-        const existingInvite = await Notification.findOne({ recipient: invitee, project: project._id, type: "project_invite", read: false });
+        const existingInvite = await JoinRequest.findOne({ project: project._id, requester: invitee, type: "invite", status: "pending" });
         if (existingInvite) return res.status(400).json({ message: "Pending invite already exists" });
 
         const [invitedUser, inviterUser] = await Promise.all([User.findById(invitee), User.findById(inviterId)]);
         if (!invitedUser) return res.status(404).json({ message: "Invited user not found" });
 
-        const notification = await Notification.create({ recipient: invitee, message: `${inviterUser.name} invited you to join "${project.title}".`, type: "project_invite", project: project._id });
+        const joinRequest = await JoinRequest.create({ project: project._id, requester: invitee, type: "invite" });
+        
+        const notification = await Notification.create({
+            recipient: invitee,
+            message: `${inviterUser.name} invited you to join "${project.title}".`,
+            type: "project_invite",
+            project: project._id,
+            request: joinRequest._id
+        });
         res.status(201).json({ message: "Invitation sent successfully", notification });
     } catch (e) { res.status(500).json({ message: "Server error sending invitation" }); }
 });
@@ -406,12 +414,25 @@ app.get("/api/requests", authenticateToken, async (req, res) => {
     try {
         const uid = req.user.id || req.user._id; // Always from JWT
         const type = req.query.type || "received";
+        const myProjects = await Project.find({ owner: uid });
+        const myProjectIds = myProjects.map(p => p._id);
+        
         if (type === "sent") {
-            const requests = await JoinRequest.find({ requester: uid }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
+            const requests = await JoinRequest.find({
+                $or: [
+                    { requester: uid, type: "request" },
+                    { project: { $in: myProjectIds }, type: "invite" }
+                ]
+            }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
             return res.json(requests);
         }
-        const myProjects = await Project.find({ owner: uid });
-        const requests = await JoinRequest.find({ project: { $in: myProjects.map(p => p._id) } }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
+        
+        const requests = await JoinRequest.find({
+            $or: [
+                { project: { $in: myProjectIds }, type: "request" },
+                { requester: uid, type: "invite" }
+            ]
+        }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
         res.json(requests);
     } catch (e) { res.status(500).json({ message: "Server error loading requests" }); }
 });
@@ -434,7 +455,12 @@ const processRequestStatus = async (requestId, status, userId) => {
 
     const project = await Project.findById(request.project._id || request.project);
     if (!project) throw new Error("Project not found");
-    if (project.owner.toString() !== userId.toString()) throw new Error("Only project owner can manage requests");
+    
+    if (request.type === "invite") {
+        if (request.requester.toString() !== userId.toString()) throw new Error("Only the invited user can respond to this invite");
+    } else {
+        if (project.owner.toString() !== userId.toString()) throw new Error("Only project owner can manage requests");
+    }
 
     request.status = status;
     await request.save();
@@ -444,13 +470,26 @@ const processRequestStatus = async (requestId, status, userId) => {
         await project.save();
     }
 
-    await Notification.create({
-        recipient: request.requester,
-        message: status === "accepted" ? `Your request to join "${project.title}" has been accepted!` : `Your request to join "${project.title}" was declined.`,
-        type: status === "accepted" ? "request_accepted" : "request_rejected",
-        project: project._id,
-        request: request._id
-    });
+    if (request.type === "invite") {
+        await Notification.create({
+            recipient: project.owner,
+            message: status === "accepted" ? `User accepted your invitation to join "${project.title}".` : `User declined your invitation to join "${project.title}".`,
+            type: status === "accepted" ? "request_accepted" : "request_rejected",
+            project: project._id,
+            request: request._id
+        });
+    } else {
+        await Notification.create({
+            recipient: request.requester,
+            message: status === "accepted" ? `Your request to join "${project.title}" has been accepted!` : `Your request to join "${project.title}" was declined.`,
+            type: status === "accepted" ? "request_accepted" : "request_rejected",
+            project: project._id,
+            request: request._id
+        });
+    }
+
+    await Notification.updateMany({ request: request._id }, { $set: { read: true } });
+    
     return request;
 };
 
@@ -517,30 +556,7 @@ const markAllReadHandler = async (req, res) => {
 app.put("/api/notifications/read-all", authenticateToken, markAllReadHandler);
 app.put("/api/notifications/read-all/:userId", authenticateToken, markAllReadHandler);
 
-app.put("/api/notifications/:notificationId/accept-invite", authenticateToken, async (req, res) => {
-    try {
-        const notif = await Notification.findById(req.params.notificationId);
-        if (!notif || notif.type !== "project_invite") return res.status(400).json({ message: "Invalid invitation" });
-        const project = await Project.findById(notif.project);
-        if (!project) return res.status(404).json({ message: "Project no longer exists" });
-
-        if (!project.members.some(m => m.toString() === notif.recipient.toString())) {
-            project.members.push(notif.recipient);
-            await project.save();
-        }
-        notif.read = true;
-        await notif.save();
-        res.json({ message: "Invitation accepted successfully! You are now a project member.", project });
-    } catch (e) { res.status(500).json({ message: "Server error accepting invitation" }); }
-});
-
-app.put("/api/notifications/:notificationId/reject-invite", authenticateToken, async (req, res) => {
-    const notif = await Notification.findById(req.params.notificationId);
-    if (!notif || notif.type !== "project_invite") return res.status(400).json({ message: "Invalid invitation" });
-    notif.read = true;
-    await notif.save();
-    res.json({ message: "Invitation declined" });
-});
+// Invites are now handled via /api/requests endpoints
 
 // ================= MESSAGES (PRIVATE — IDOR PROTECTED) =================
 app.post("/api/messages", authenticateToken, async (req, res) => {
