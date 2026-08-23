@@ -55,7 +55,7 @@
     </section>
 
     <section class="dash-card">
-        <div class="card-title"><h2>Skills</h2></div>
+        <h2>Skills</h2>
         <div class="tags" id="skillsTags"></div>
         <div style="display:flex;gap:10px;margin-top:15px;">
             <input type="text" id="skillInput" placeholder="Add a skill" style="flex:1;">
@@ -128,7 +128,7 @@ async function saveProfile() {
     };
 
     try {
-        const res = await fetch(`/api/users/${user._id}`, {
+        const res = await fetch(`${API_BASE_URL}/api/users/${user._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(data)
@@ -148,7 +148,7 @@ async function loadUserProjects() {
     const token = localStorage.getItem('token');
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     try {
-        const res = await fetch(`/api/users/${user._id}/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE_URL}/api/users/${user._id}/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
         const projects = await res.json();
         document.getElementById('userProjects').innerHTML = projects.length ? projects.map(p => `
             <div class="project">

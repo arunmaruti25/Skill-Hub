@@ -72,6 +72,10 @@
 
 <script src="../js/auth.js"></script>
 <script>
+const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://127.0.0.1:5000"
+    : "https://skill-hub-backend-4w35.onrender.com";
+
 document.addEventListener('DOMContentLoaded', () => {
     const token = localStorage.getItem('token');
     if (!token) return window.location.href = 'login.html';
@@ -79,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function logout() { localStorage.clear(); window.location.href = '../index.html'; }
-
 let currentTab = 'received';
 
 async function loadRequests(type) {
@@ -90,7 +93,7 @@ async function loadRequests(type) {
     document.getElementById('tabSent').className = type === 'sent' ? 'primary-btn' : 'outline-btn';
     
     try {
-        const res = await fetch(`/api/requests?type=${type}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE_URL}/api/requests?type=${type}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const requests = await res.json();
         renderRequests(requests, type);
     } catch (err) {
@@ -139,7 +142,7 @@ function renderRequests(requests, type) {
 async function handleRequest(id, action) {
     const token = localStorage.getItem('token');
     try {
-        await fetch(`/api/requests/${id}`, {
+        await fetch(`${API_BASE_URL}/api/requests/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ status: action })
@@ -154,7 +157,7 @@ async function cancelRequest(id) {
     if (!confirm('Cancel this request?')) return;
     const token = localStorage.getItem('token');
     try {
-        await fetch(`/api/requests/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
+        await fetch(`${API_BASE_URL}/api/requests/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
         loadRequests(currentTab);
     } catch (err) { alert('Failed to cancel request'); }
 }

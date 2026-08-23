@@ -77,7 +77,7 @@ function goBack() { window.history.back(); }
 async function loadUserProfile(userId) {
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`/api/users/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE_URL}/api/users/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } });
         const user = await res.json();
         
         document.getElementById('userName').textContent = user.name || 'User';
@@ -102,7 +102,7 @@ async function loadUserProfile(userId) {
 async function loadUserProjects(userId) {
     const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`/api/users/${userId}/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await fetch(`${API_BASE_URL}/api/users/${userId}/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
         const projects = await res.json();
         document.getElementById('userProjects').innerHTML = projects.length ? projects.map(p => `
             <div class="project">

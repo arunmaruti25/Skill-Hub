@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projects - Skill Hub</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+</head>
+<body>
+<aside class="sidebar">
+    <a href="dashboard.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
+    <nav>
+        <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
+        <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
+        <a href="projects.html" class="active"><i class="fa-solid fa-folder"></i> Projects</a>
+        <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+        <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
+        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+    </div>
+</aside>
+
+<main class="dashboard">
+    <div class="page-head">
+        <div>
+            <h1>Projects</h1>
+            <p>Discover projects and collaborate with others.</p>
+        </div>
+        <button class="primary-btn" onclick="showCreateProject()"><i class="fa-solid fa-plus"></i> Create Project</button>
+    </div>
+
+    <div class="filters">
+        <select id="skillFilter"><option value="">All Skills</option></select>
+        <select id="sortFilter">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="popular">Most Members</option>
+        </select>
+    </div>
+
+    <div class="dashboard-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="projectSearch" placeholder="Search projects..." oninput="filterProjects()">
+    </div>
+
+    <div id="projectsGrid" class="people" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+        <p class="section-text" style="grid-column:1/-1;text-align:center;">Loading projects...</p>
+    </div>
+</main>
+
+<div id="createProjectModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,29,57,0.5);z-index:1000;align-items:center;justify-content:center;">
+    <div class="auth-box" style="width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h2>Create Project</h2>
+            <button class="outline-btn" onclick="closeCreateProject()" style="padding:8px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="createProjectForm">
+            <label>Project Title</label>
+            <input type="text" name="title" placeholder="My Awesome Project" required>
+            <label>Description</label>
+            <textarea name="description" placeholder="Describe your project..." required></textarea>
+            <label>Required Skills (comma separated)</label>
+            <input type="text" name="skills" placeholder="React, Node.js, MongoDB" required>
+            <button type="submit" class="primary-btn" style="width:100%;margin-top:10px;"><i class="fa-solid fa-plus"></i> Create Project</button>
+        </form>
+    </div>
+</div>
+
+const API_BASE_URL = window.location.hostname === localhost || window.location.hostname === 127.0.0.1
+    ? http://127.0.0.1:5000
+    : https://skill-hub-backend-4w35.onrender.com;
+<script src="../js/auth.js"></script>
+const API_BASE_URL = window.location.hostname === " localhost\ || window.location.hostname === 127.0.0.1
+    ? http://127.0.0.1:5000
+    : https://skill-hub-backend-4w35.onrender.com;
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const token = localStorage.getItem('token');
+    if (!token) return window.location.href = 'login.html';
+    loadProjects();
+    loadSkillFilter();
+});
+
+function logout() { localStorage.clear(); window.location.href = '../index.html'; }
+function showCreateProject() { document.getElementById('createProjectModal').style.display = 'flex'; }
+function closeCreateProject() { document.getElementById('createProjectModal').style.display = 'none'; }
+
+async function loadProjects() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/projects', { headers: { 'Authorization': `Bearer ${token}` } });
+        const projects = await res.json();
+        renderProjects(projects);
+    } catch (err) {
+        console.error('Load projects error:', err);
+    }
+}
+
+function renderProjects(projects) {
+    const container = document.getElementById('projectsGrid');
+    if (!projects.length) {
+        container.innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;">No projects found.</p>';
+        return;
+    }
+    container.innerHTML = projects.map(p => `
+        <div class="person" style="text-align:left;padding:20px;">
+            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+                <div class="project-icon" style="width:48px;height:48px;min-width:48px;"><i class="fa-solid fa-code"></i></div>
+                <div style="flex:1;">
+                    <h3 style="color:#001D39;margin-bottom:4px;">${p.title}</h3>
+                    <p style="color:#2F4156;font-size:13px;">${p.description?.substring(0,100)}...</p>
+                </div>
+            </div>
+            <div class="tags" style="margin-bottom:12px;">
+                ${(p.skills || []).map(s => `<span>${s}</span>`).join('')}
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="color:#2F4156;font-size:12px;"><i class="fa-solid fa-user"></i> ${p.owner?.name || 'Unknown'}</span>
+                <a href="project-details.html?id=${p._id}" class="primary-btn" style="padding:8px 16px;font-size:12px;">View Details</a>
+            </div>
+        </div>
+    `).join('');
+}
+
+async function loadSkillFilter() {
+    const token = localStorage.getItem('token');
+    try {
+        const res = await fetch('/api/skills', { headers: { 'Authorization': `Bearer ${token}` } });
+        const skills = await res.json();
+        const select = document.getElementById('skillFilter');
+        skills.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s;
+            opt.textContent = s;
+            select.appendChild(opt);
+        });
+    } catch (err) { console.error('Load skills error:', err); }
+}
+
+function filterProjects() {
+    const search = document.getElementById('projectSearch').value.toLowerCase();
+    const skill = document.getElementById('skillFilter').value;
+    const sort = document.getElementById('sortFilter').value;
+    const cards = document.querySelectorAll('#projectsGrid .person');
+    
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const matchesSearch = !search || text.includes(search);
+        const matchesSkill = !skill || text.includes(skill.toLowerCase());
+        card.style.display = (matchesSearch && matchesSkill) ? 'block' : 'none';
+    });
+}
+
+document.getElementById('createProjectForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = localStorage.getItem('token');
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    data.skills = data.skills.split(',').map(s => s.trim()).filter(Boolean);
+    data.owner = JSON.parse(localStorage.getItem('user'))._id;
+
+    try {
+        const res = await fetch('/api/projects', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(data)
+        });
+        if (res.ok) { closeCreateProject(); loadProjects(); }
+        else alert('Failed to create project');
+    } catch (err) { alert('Network error'); }
+});
+</script>
+</body>
+</html>

@@ -84,10 +84,17 @@ let profileSkills = [];
 
 async function loadProfile() {
     const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
     if (!user?.id) return;
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/` + user.id);
+        const res = await fetch(`${API_BASE_URL}/api/profile/` + user.id, {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token ? `Bearer ${token}` : ""
+            }
+        });
         const data = await res.json();
         if (!res.ok) return alert(data.message || "Could not load profile");
 
@@ -158,6 +165,7 @@ function removeSkill(index) {
 
 async function saveProfile() {
     const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
     if (!user?.id) return alert("Please login again.");
 
     const profileData = {
@@ -175,7 +183,10 @@ async function saveProfile() {
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/` + user.id, {
             method: "PUT",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": token ? `Bearer ${token}` : ""
+            },
             body: JSON.stringify(profileData)
         });
         const data = await res.json();
@@ -209,8 +220,10 @@ if (profileImageInput) {
         const formData = new FormData();
         formData.append("image", file);
 
+        const token = localStorage.getItem("token");
         const res = await fetch(`${API_BASE_URL}/api/profile/${user.id}/image`, {
             method: "POST",
+            headers: token ? { "Authorization": `Bearer ${token}` } : {},
             body: formData
         });
         const data = await res.json();
@@ -225,12 +238,14 @@ if (profileImageInput) {
 
 async function removeProfileImage() {
     const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
     if (!user?.id) return;
     if (!confirm("Are you sure you want to remove your profile photo?")) return;
 
     try {
         const res = await fetch(`${API_BASE_URL}/api/profile/${user.id}/image`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: token ? { "Authorization": `Bearer ${token}` } : {}
         });
         const data = await res.json();
         if (res.ok) {
@@ -252,9 +267,10 @@ async function removeProfileImage() {
 // ================= NOTIFICATIONS =================
 async function markAllRead() {
     const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
     if (user?.id) {
         try {
-            await fetch(`${API_BASE_URL}/api/notifications/read-all/` + user.id, { method: "PUT" });
+            await fetch(`${API_BASE_URL}/api/notifications/read-all/` + user.id, { method: "PUT", headers: token ? { "Authorization": `Bearer ${token}` } : {} });
         } catch (err) {
             console.error("Could not mark notifications as read:", err);
         }
@@ -272,10 +288,11 @@ async function markAllRead() {
 // ================= GLOBAL SIDEBAR BADGES =================
 async function updateSidebarBadges() {
     const user = JSON.parse(localStorage.getItem("user"));
+    const token = localStorage.getItem("token");
     if (!user?.id) return;
 
     try {
-        const msgRes = await fetch(`${API_BASE_URL}/api/message-inbox/` + user.id);
+        const msgRes = await fetch(`${API_BASE_URL}/api/message-inbox/` + user.id, { headers: token ? { "Authorization": `Bearer ${token}` } : {} });
         if (msgRes.ok) {
             const conversations = await msgRes.json();
             const unreadMessages = conversations.reduce((sum, c) => sum + Number(c.unreadCount || 0), 0);
@@ -289,7 +306,7 @@ async function updateSidebarBadges() {
     }
 
     try {
-        const notifRes = await fetch(`${API_BASE_URL}/api/notifications/` + user.id);
+        const notifRes = await fetch(`${API_BASE_URL}/api/notifications/` + user.id, { headers: token ? { "Authorization": `Bearer ${token}` } : {} });
         if (notifRes.ok) {
             const notifs = await notifRes.json();
             const unreadNotifs = notifs.filter(n => !n.read).length;
