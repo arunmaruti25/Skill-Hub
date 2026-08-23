@@ -5,6 +5,8 @@ const path = require("path");
 const fs = require("fs");
 const cors = require("cors");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const User = require("./models/user");
@@ -14,695 +16,653 @@ const Notification = require("./models/Notification");
 const Message = require("./models/Message");
 
 const app = express();
+const JWT_SECRET = process.env.JWT_SECRET || "skillhub_super_secret_jwt_key_2026";
+const POP_USER = "name email profileImage profession skills bio";
+
+// ================= STORAGE & MIDDLEWARE =================
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, uploadDir),
-    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
-});
-
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|webp|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    if (extname && mimetype) {
-        cb(null, true);
-    } else {
-        cb(new Error("Only image files (JPEG, PNG, WebP, GIF) are allowed!"));
-    }
-};
 
 const upload = multer({
-    storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB limit
-    fileFilter
+    storage: multer.diskStorage({
+        destination: (req, file, cb) => cb(null, uploadDir),
+        filename: (req, file, cb) => cb(null, `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname).toLowerCase()}`)
+    }),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        if (/jpeg|jpg|png|webp|gif/.test(path.extname(file.originalname).toLowerCase()) && /jpeg|jpg|png|webp|gif/.test(file.mimetype)) {
+            cb(null, true);
+        } else cb(new Error("Only image files (JPEG, PNG, WebP, GIF) are allowed!"));
+    }
 });
 
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-}));
+app.use(cors({ origin: "*", methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Content-Type", "Authorization"], credentials: true }));
 app.use(express.json());
 app.use("/uploads", express.static(uploadDir));
 
-// ================= HOME =================
-app.get("/", (req, res) => res.send("Skill Hub Backend is running!"));
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many authentication attempts. Please try again later." }
+});
 
-// ================= AUTH =================
-app.post("/api/register", async (req, res) => {
+// Helper: Format User
+const formatUser = u => ({
+    id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email,
+    profession: u.profession || "", bio: u.bio || "", location: u.location || "",
+    experience: u.experience || "Beginner", availability: u.availability || "Available",
+    skills: u.skills || [], github: u.github || "", linkedin: u.linkedin || "",
+    profileImage: u.profileImage || "", role: u.role || "user", createdAt: u.createdAt
+});
+
+const generateToken = u => jwt.sign({ id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email, role: u.role || "user" }, JWT_SECRET, { expiresIn: "7d" });
+
+// Middlewares
+function authenticateToken(req, res, next) {
+    const token = req.headers["authorization"]?.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "Access denied. No token provided." });
+    jwt.verify(token, JWT_SECRET, (err, decoded) => {
+        if (err) return res.status(403).json({ message: "Invalid or expired token." });
+        req.user = decoded;
+        next();
+    });
+}
+
+function optionalAuth(req, res, next) {
+    const token = req.headers["authorization"]?.split(" ")[1];
+    if (token) jwt.verify(token, JWT_SECRET, (err, decoded) => { if (!err) req.user = decoded; next(); });
+    else next();
+}
+
+async function requireAdmin(req, res, next) {
+    if (!req.user) return res.status(401).json({ message: "Authentication required." });
+    const user = await User.findById(req.user.id || req.user._id);
+    if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required." });
+    next();
+}
+
+// ================= AUTH ROUTES =================
+app.get("/", (req, res) => res.json({ status: "ok", message: "Skill Hub Backend is running!" }));
+
+const handleRegister = async (req, res) => {
     try {
         const { name, email, password } = req.body;
-        if (!name || !email || !password) return res.status(400).json({ message: "All fields are required" });
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) return res.status(400).json({ message: "Please provide a valid email address" });
-
+        if (!name || !email || !password) return res.status(400).json({ message: "Name, email, and password are required" });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return res.status(400).json({ message: "Please provide a valid email address" });
         if (password.length < 6) return res.status(400).json({ message: "Password must be at least 6 characters long" });
 
         const existingUser = await User.findOne({ email: email.toLowerCase().trim() });
-        if (existingUser) return res.status(400).json({ message: "Email already registered" });
+        if (existingUser) return res.status(400).json({ message: "Email is already registered. Please sign in." });
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const user = new User({ name: name.trim(), email: email.toLowerCase().trim(), password: hashedPassword });
-        await user.save();
+        const user = await User.create({ name: name.trim(), email: email.toLowerCase().trim(), password: await bcrypt.hash(password, 10), role: "user" });
+        res.status(201).json({ message: "Account created successfully!", token: generateToken(user), user: formatUser(user) });
+    } catch (e) { res.status(500).json({ message: "Server error during registration" }); }
+};
 
-        res.status(201).json({ message: "Account created successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-app.post("/api/login", async (req, res) => {
+const handleLogin = async (req, res) => {
     try {
         const { email, password } = req.body;
         if (!email || !password) return res.status(400).json({ message: "Email and password are required" });
-
         const user = await User.findOne({ email: email.toLowerCase().trim() });
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ message: "Invalid email or password" });
-        }
+        if (!user || !(await bcrypt.compare(password, user.password))) return res.status(401).json({ message: "Invalid email or password" });
+        res.json({ message: "Login successful", token: generateToken(user), user: formatUser(user) });
+    } catch (e) { res.status(500).json({ message: "Server error during login" }); }
+};
 
-        res.json({
-            message: "Login successful",
-            user: { id: user._id, name: user.name, email: user.email, role: user.role || "user" }
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-app.post("/api/reset-password", async (req, res) => {
+const handlePasswordReset = async (req, res) => {
     try {
         const { email, password } = req.body;
-        if (!email || !password) return res.status(400).json({ message: "Email and new password are required" });
-
-        if (password.length < 6) return res.status(400).json({ message: "Password must be at least 6 characters long" });
-
+        if (!email) return res.status(400).json({ message: "Email is required" });
         const user = await User.findOne({ email: email.toLowerCase().trim() });
         if (!user) return res.status(404).json({ message: "No account found with this email address" });
 
-        const hashedPassword = await bcrypt.hash(password, 10);
-        user.password = hashedPassword;
-        await user.save();
+        if (password) {
+            if (password.length < 6) return res.status(400).json({ message: "New password must be at least 6 characters long" });
+            user.password = await bcrypt.hash(password, 10);
+            await user.save();
+            return res.json({ message: "Password reset successfully! You can now log in." });
+        }
+        res.json({ message: "Password reset instructions have been sent to your email." });
+    } catch (e) { res.status(500).json({ message: "Could not reset password. Server error." }); }
+};
 
-        res.json({ message: "Password reset successfully! You can now log in." });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not reset password. Server error." });
-    }
+app.post("/api/register", authLimiter, handleRegister);
+app.post("/api/auth/register", authLimiter, handleRegister);
+app.post("/api/login", authLimiter, handleLogin);
+app.post("/api/auth/login", authLimiter, handleLogin);
+app.post("/api/reset-password", authLimiter, handlePasswordReset);
+app.post("/api/auth/reset-password", authLimiter, handlePasswordReset);
+app.post("/api/auth/forgot-password", authLimiter, handlePasswordReset);
+
+app.get("/api/auth/me", authenticateToken, async (req, res) => {
+    const user = await User.findById(req.user.id || req.user._id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json({ user: formatUser(user) });
 });
 
-// ================= USERS & PROFILES =================
-app.get("/api/users", async (req, res) => {
+// ================= SKILLS =================
+app.get("/api/skills", async (req, res) => {
     try {
-        const users = await User.find().select("-password").sort({ name: 1 });
-        res.json(users);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not load users" });
-    }
+        const defaults = ["React", "Node.js", "Python", "JavaScript", "TypeScript", "UI/UX", "Java", "C++", "AI / ML", "Database", "MongoDB", "Express", "HTML/CSS", "Tailwind CSS", "Figma", "Docker", "DevOps", "AWS", "Flutter", "SQL"];
+        const [uSkills, pSkills] = await Promise.all([User.distinct("skills"), Project.distinct("skills")]);
+        res.json(Array.from(new Set([...defaults, ...uSkills, ...pSkills])).filter(Boolean).sort());
+    } catch (e) { res.status(500).json({ message: "Could not load skills" }); }
 });
 
-app.get("/api/profile/:id", async (req, res) => {
+// ================= USERS & PROFILE =================
+app.get("/api/users", optionalAuth, async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).select("-password");
+        const { search, skill } = req.query;
+        const query = {};
+        if (search) {
+            const regex = new RegExp(search.trim(), "i");
+            query.$or = [{ name: regex }, { profession: regex }, { bio: regex }, { skills: regex }];
+        }
+        if (skill) query.skills = { $in: [new RegExp(`^${skill.trim()}$`, "i")] };
+        const users = await User.find(query).select("-password").sort({ name: 1 });
+        res.json(users.map(formatUser));
+    } catch (e) { res.status(500).json({ message: "Could not load users" }); }
+});
+
+const getProfileHandler = async (req, res) => {
+    const user = await User.findById(req.params.id).select("-password");
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.json(formatUser(user));
+};
+app.get("/api/profile/:id", getProfileHandler);
+app.get("/api/users/:id", getProfileHandler);
+
+const updateProfileHandler = async (req, res) => {
+    try {
+        const targetId = req.params.id;
+        if (req.user && req.user.id !== targetId && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized profile update" });
+
+        const fields = ["name", "profession", "bio", "location", "experience", "availability", "github", "linkedin"];
+        const updateData = {};
+        fields.forEach(f => { if (req.body[f] !== undefined) updateData[f] = typeof req.body[f] === "string" ? req.body[f].trim() : req.body[f]; });
+        if (req.body.skills !== undefined) updateData.skills = Array.isArray(req.body.skills) ? req.body.skills : [];
+        if (req.body.email && req.user?.role === "admin") updateData.email = req.body.email.toLowerCase().trim();
+
+        const user = await User.findByIdAndUpdate(targetId, updateData, { new: true, runValidators: true }).select("-password");
         if (!user) return res.status(404).json({ message: "User not found" });
-        res.json(user);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+        res.json({ message: "Profile updated successfully", user: formatUser(user) });
+    } catch (e) { res.status(500).json({ message: "Server error updating profile" }); }
+};
+app.put("/api/profile/:id", authenticateToken, updateProfileHandler);
+app.put("/api/users/:id", authenticateToken, updateProfileHandler);
 
-app.put("/api/profile/:id", async (req, res) => {
-    try {
-        const { name, profession, bio, location, skills, experience, availability, github, linkedin } = req.body;
-        const user = await User.findByIdAndUpdate(
-            req.params.id,
-            { name, profession, bio, location, skills, experience, availability, github, linkedin },
-            { new: true, runValidators: true }
-        ).select("-password");
-
-        if (!user) return res.status(404).json({ message: "User not found" });
-        res.json({ message: "Profile updated successfully", user });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-app.post("/api/profile/:id/image", (req, res) => {
+const uploadImageHandler = (req, res) => {
     upload.single("image")(req, res, async (err) => {
-        if (err) {
-            return res.status(400).json({ message: err.message || "File upload error" });
-        }
+        if (err) return res.status(400).json({ message: err.message || "Upload error" });
         try {
+            const targetId = req.params.id;
+            if (req.user && req.user.id !== targetId && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized image upload" });
             if (!req.file) return res.status(400).json({ message: "No image file provided" });
-            const user = await User.findByIdAndUpdate(
-                req.params.id,
-                { profileImage: "/uploads/" + req.file.filename },
-                { new: true }
-            ).select("-password");
 
+            const user = await User.findById(targetId);
             if (!user) return res.status(404).json({ message: "User not found" });
-            res.json({ user });
-        } catch (error) {
-            console.error(error);
-            res.status(500).json({ message: "Image upload failed" });
-        }
-    });
-});
 
-app.delete("/api/profile/:id/image", async (req, res) => {
+            if (user.profileImage?.startsWith("/uploads/")) {
+                const old = path.join(__dirname, user.profileImage);
+                if (fs.existsSync(old)) fs.unlink(old, () => {});
+            }
+
+            user.profileImage = "/uploads/" + req.file.filename;
+            await user.save();
+            res.json({ message: "Profile image uploaded successfully", user: formatUser(user) });
+        } catch (e) { res.status(500).json({ message: "Image upload failed" }); }
+    });
+};
+app.post("/api/profile/:id/image", authenticateToken, uploadImageHandler);
+app.post("/api/users/:id/image", authenticateToken, uploadImageHandler);
+
+const deleteImageHandler = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
+        const targetId = req.params.id;
+        if (req.user && req.user.id !== targetId && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized" });
+        const user = await User.findById(targetId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        if (user.profileImage) {
-            const oldPath = path.join(__dirname, user.profileImage);
-            if (fs.existsSync(oldPath)) {
-                fs.unlink(oldPath, err => { if (err) console.error("Error deleting image file:", err); });
-            }
+        if (user.profileImage?.startsWith("/uploads/")) {
+            const old = path.join(__dirname, user.profileImage);
+            if (fs.existsSync(old)) fs.unlink(old, () => {});
         }
-
         user.profileImage = "";
         await user.save();
+        res.json({ message: "Profile image removed successfully", user: formatUser(user) });
+    } catch (e) { res.status(500).json({ message: "Could not remove profile image" }); }
+};
+app.delete("/api/profile/:id/image", authenticateToken, deleteImageHandler);
+app.delete("/api/users/:id/image", authenticateToken, deleteImageHandler);
 
-        res.json({ message: "Profile image removed successfully", user });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not remove profile image" });
-    }
-});
-
-// ================= ADMIN ROUTES =================
-app.get("/api/admin/stats", async (req, res) => {
+app.get("/api/users/:id/projects", async (req, res) => {
     try {
-        const [totalUsers, totalProjects, totalRequests, totalMessages] = await Promise.all([
-            User.countDocuments(),
-            Project.countDocuments(),
-            JoinRequest.countDocuments(),
-            Message.countDocuments()
-        ]);
-        res.json({ totalUsers, totalProjects, totalRequests, totalMessages });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not load admin stats" });
-    }
-});
-
-app.get("/api/admin/users", async (req, res) => {
-    try {
-        const users = await User.find().select("-password").sort({ createdAt: -1 });
-        res.json(users);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not load users" });
-    }
-});
-
-app.delete("/api/admin/users/:id", async (req, res) => {
-    try {
-        const userId = req.params.id;
-        await Promise.all([
-            User.findByIdAndDelete(userId),
-            Project.deleteMany({ owner: userId }),
-            JoinRequest.deleteMany({ requester: userId }),
-            Notification.deleteMany({ recipient: userId }),
-            Message.deleteMany({ $or: [{ sender: userId }, { receiver: userId }] })
-        ]);
-        res.json({ message: "User and associated data deleted successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not delete user" });
-    }
-});
-
-app.delete("/api/admin/projects/:id", async (req, res) => {
-    try {
-        const projectId = req.params.id;
-        await Promise.all([
-            Project.findByIdAndDelete(projectId),
-            JoinRequest.deleteMany({ project: projectId }),
-            Notification.deleteMany({ project: projectId })
-        ]);
-        res.json({ message: "Project deleted successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not delete project" });
-    }
+        const uid = req.params.id;
+        const projects = await Project.find({ $or: [{ owner: uid }, { members: uid }] }).populate("owner members", POP_USER).sort({ createdAt: -1 });
+        res.json(projects);
+    } catch (e) { res.status(500).json({ message: "Could not load user projects" }); }
 });
 
 // ================= PROJECTS =================
-app.post("/api/projects", async (req, res) => {
+app.get("/api/projects", optionalAuth, async (req, res) => {
     try {
-        const { title, description, owner, skills } = req.body;
-        if (!title || !description || !owner) return res.status(400).json({ message: "Title, description and owner are required" });
+        const { search, skill, sort } = req.query;
+        const query = {};
+        if (search) {
+            const regex = new RegExp(search.trim(), "i");
+            query.$or = [{ title: regex }, { description: regex }, { skills: regex }];
+        }
+        if (skill) query.skills = { $in: [new RegExp(`^${skill.trim()}$`, "i")] };
 
-        const project = new Project({ title, description, owner, skills: skills || [], members: [owner] });
-        await project.save();
-
-        const populatedProject = await Project.findById(project._id)
-            .populate("owner", "name email")
-            .populate("members", "name email");
-
-        res.status(201).json({ message: "Project created successfully", project: populatedProject });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-app.get("/api/projects", async (req, res) => {
-    try {
-        const projects = await Project.find()
-            .populate("owner", "name email")
-            .populate("members", "name email")
-            .sort({ createdAt: -1 });
+        const sortOption = sort === "oldest" ? { createdAt: 1 } : (sort === "popular" ? { "members.length": -1, createdAt: -1 } : { createdAt: -1 });
+        const projects = await Project.find(query).populate("owner members", POP_USER).sort(sortOption);
         res.json(projects);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+    } catch (e) { res.status(500).json({ message: "Server error fetching projects" }); }
 });
 
-app.get("/api/projects/:id", async (req, res) => {
+app.get("/api/projects/:id", optionalAuth, async (req, res) => {
+    const project = await Project.findById(req.params.id).populate("owner members", POP_USER);
+    if (!project) return res.status(404).json({ message: "Project not found" });
+    res.json(project);
+});
+
+app.post("/api/projects", authenticateToken, async (req, res) => {
     try {
-        const project = await Project.findById(req.params.id)
-            .populate("owner", "name email")
-            .populate("members", "name email");
+        const { title, description, skills } = req.body;
+        const ownerId = req.user.id || req.user._id || req.body.owner;
+        if (!title || !description) return res.status(400).json({ message: "Title and description are required" });
+
+        const pSkills = Array.isArray(skills) ? skills : (typeof skills === "string" ? skills.split(",").map(s => s.trim()).filter(Boolean) : []);
+        const project = await Project.create({ title: title.trim(), description: description.trim(), owner: ownerId, skills: pSkills, members: [ownerId] });
+        res.status(201).json({ message: "Project created successfully", project: await Project.findById(project._id).populate("owner members", POP_USER) });
+    } catch (e) { res.status(500).json({ message: "Server error creating project" }); }
+});
+
+app.put("/api/projects/:id", authenticateToken, async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.id);
         if (!project) return res.status(404).json({ message: "Project not found" });
-        res.json(project);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+        if (project.owner.toString() !== (req.user.id || req.user._id) && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized project edit" });
+
+        const { title, description, skills } = req.body;
+        if (title) project.title = title.trim();
+        if (description) project.description = description.trim();
+        if (skills !== undefined) project.skills = Array.isArray(skills) ? skills : (typeof skills === "string" ? skills.split(",").map(s => s.trim()).filter(Boolean) : []);
+        await project.save();
+        res.json({ message: "Project updated successfully", project: await Project.findById(project._id).populate("owner members", POP_USER) });
+    } catch (e) { res.status(500).json({ message: "Server error updating project" }); }
 });
 
-// ================= DASHBOARD =================
-app.get("/api/dashboard/:userId", async (req, res) => {
+app.delete("/api/projects/:id", authenticateToken, async (req, res) => {
     try {
-        const userId = req.params.userId;
-        const user = await User.findById(userId).select("-password");
-        if (!user) return res.status(404).json({ message: "User not found" });
+        const project = await Project.findById(req.params.id);
+        if (!project) return res.status(404).json({ message: "Project not found" });
+        if (project.owner.toString() !== (req.user.id || req.user._id) && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized project delete" });
 
-        const projects = await Project.find()
-            .populate("owner", "name email")
-            .populate("members", "name email")
-            .sort({ createdAt: -1 });
-
-        const myProjects = projects.filter(p => p.owner._id.toString() === userId);
-        const myProjectIds = myProjects.map(p => p._id);
-        const pendingRequests = await JoinRequest.countDocuments({
-            project: { $in: myProjectIds },
-            status: "pending"
-        });
-
-        const teammates = await User.find({ _id: { $ne: userId } })
-            .select("-password")
-            .sort({ name: 1 });
-
-        res.json({
-            user,
-            teammatesCount: teammates.length,
-            myProjectsCount: myProjects.length,
-            pendingRequestsCount: pendingRequests,
-            featuredProjects: projects.slice(0, 3),
-            teammates: teammates.slice(0, 3)
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not load dashboard" });
-    }
+        await Promise.all([Project.findByIdAndDelete(project._id), JoinRequest.deleteMany({ project: project._id }), Notification.deleteMany({ project: project._id })]);
+        res.json({ message: "Project deleted successfully" });
+    } catch (e) { res.status(500).json({ message: "Server error deleting project" }); }
 });
 
-// ================= INVITATIONS & JOIN REQUESTS =================
-app.post("/api/projects/:projectId/invite", async (req, res) => {
+const handleJoinRequestCreation = async (req, res) => {
     try {
-        const { inviter, invitee } = req.body;
-        if (!inviter || !invitee) return res.status(400).json({ message: "Inviter and invitee are required" });
+        const projectId = req.params.projectId || req.params.id;
+        const requesterId = req.user?.id || req.user?._id || req.body.requester;
+        if (!requesterId) return res.status(401).json({ message: "Requester authentication required" });
+
+        const project = await Project.findById(projectId);
+        if (!project) return res.status(404).json({ message: "Project not found" });
+        if (project.owner.toString() === requesterId.toString() || project.members.some(m => m.toString() === requesterId.toString())) {
+            return res.status(400).json({ message: "You are already a member or owner of this project" });
+        }
+
+        const existing = await JoinRequest.findOne({ project: project._id, requester: requesterId, status: "pending" });
+        if (existing) return res.status(400).json({ message: "You already have a pending join request for this project" });
+
+        const joinRequest = await JoinRequest.create({ project: project._id, requester: requesterId });
+        const requester = await User.findById(requesterId);
+        if (requester) {
+            await Notification.create({ recipient: project.owner, message: `${requester.name} requested to join your project "${project.title}".`, type: "join_request", project: project._id, request: joinRequest._id });
+        }
+        res.status(201).json({ message: "Join request sent successfully!", request: joinRequest });
+    } catch (e) { res.status(500).json({ message: "Server error sending join request" }); }
+};
+
+app.post("/api/projects/:projectId/request", authenticateToken, handleJoinRequestCreation);
+app.post("/api/projects/:projectId/join", authenticateToken, handleJoinRequestCreation);
+
+app.post("/api/projects/:projectId/leave", authenticateToken, async (req, res) => {
+    try {
+        const project = await Project.findById(req.params.projectId);
+        if (!project) return res.status(404).json({ message: "Project not found" });
+        const uid = req.user.id || req.user._id;
+        if (project.owner.toString() === uid.toString()) return res.status(400).json({ message: "Project owners cannot leave their own project." });
+
+        project.members = project.members.filter(m => m.toString() !== uid.toString());
+        await project.save();
+        res.json({ message: "You have left the project successfully." });
+    } catch (e) { res.status(500).json({ message: "Server error leaving project" }); }
+});
+
+app.post("/api/projects/:projectId/invite", authenticateToken, async (req, res) => {
+    try {
+        const inviterId = req.user.id || req.user._id;
+        const { invitee } = req.body;
+        if (!invitee) return res.status(400).json({ message: "Invitee ID is required" });
 
         const project = await Project.findById(req.params.projectId);
         if (!project) return res.status(404).json({ message: "Project not found" });
-        if (project.owner.toString() !== inviter.toString()) {
-            return res.status(403).json({ message: "Only the project owner can invite teammates" });
-        }
-        if (inviter.toString() === invitee.toString()) {
-            return res.status(400).json({ message: "You cannot invite yourself" });
-        }
-        if (project.members.some(m => m.toString() === invitee.toString())) {
-            return res.status(400).json({ message: "This user is already a member of the project" });
-        }
+        if (project.owner.toString() !== inviterId.toString() && req.user.role !== "admin") return res.status(403).json({ message: "Only project owner can invite" });
 
-        const [invitedUser, inviterUser] = await Promise.all([User.findById(invitee), User.findById(inviter)]);
+        const [invitedUser, inviterUser] = await Promise.all([User.findById(invitee), User.findById(inviterId)]);
         if (!invitedUser) return res.status(404).json({ message: "Invited user not found" });
 
-        const existingNotification = await Notification.findOne({
-            recipient: invitee,
-            project: project._id,
-            type: "project_invite",
-            read: false
-        });
-        if (existingNotification) return res.status(400).json({ message: "You have already invited this user to this project" });
-
-        const notification = await Notification.create({
-            recipient: invitee,
-            message: `${inviterUser.name} invited you to join "${project.title}".`,
-            type: "project_invite",
-            project: project._id
-        });
-
+        const notification = await Notification.create({ recipient: invitee, message: `${inviterUser.name} invited you to join "${project.title}".`, type: "project_invite", project: project._id });
         res.status(201).json({ message: "Invitation sent successfully", notification });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+    } catch (e) { res.status(500).json({ message: "Server error sending invitation" }); }
 });
 
-app.post("/api/projects/:projectId/request", async (req, res) => {
-    try {
-        const { requester } = req.body;
-        if (!requester) return res.status(400).json({ message: "Requester is required" });
+app.get("/api/projects/:projectId/requests", authenticateToken, async (req, res) => {
+    const project = await Project.findById(req.params.projectId);
+    if (!project) return res.status(404).json({ message: "Project not found" });
+    if (project.owner.toString() !== (req.user.id || req.user._id) && req.user.role !== "admin") return res.status(403).json({ message: "Only owner can view requests" });
 
-        const project = await Project.findById(req.params.projectId);
-        if (!project) return res.status(404).json({ message: "Project not found" });
-        if (project.owner.toString() === requester.toString()) {
-            return res.status(400).json({ message: "You are already the owner of this project" });
-        }
-        if (project.members.some(m => m.toString() === requester.toString())) {
-            return res.status(400).json({ message: "You are already a member of this project" });
-        }
-
-        const existingRequest = await JoinRequest.findOne({ project: project._id, requester, status: "pending" });
-        if (existingRequest) return res.status(400).json({ message: "You already have a pending request" });
-
-        const joinRequest = new JoinRequest({ project: project._id, requester });
-        await joinRequest.save();
-
-        const requesterUser = await User.findById(requester);
-        if (requesterUser) {
-            await Notification.create({
-                recipient: project.owner,
-                message: `${requesterUser.name} requested to join your project "${project.title}".`,
-                type: "join_request",
-                project: project._id,
-                request: joinRequest._id
-            });
-        }
-
-        res.status(201).json({ message: "Join request sent successfully", request: joinRequest });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+    const requests = await JoinRequest.find({ project: project._id, status: "pending" }).populate("requester", POP_USER).populate("project", "title").sort({ createdAt: -1 });
+    res.json(requests);
 });
 
-app.get("/api/requests/sent/:userId", async (req, res) => {
+// ================= REQUESTS =================
+app.get("/api/requests", authenticateToken, async (req, res) => {
     try {
-        const requests = await JoinRequest.find({ requester: req.params.userId })
-            .populate("project", "title description")
-            .populate("requester", "name email")
-            .sort({ createdAt: -1 });
+        const uid = req.user.id || req.user._id;
+        const type = req.query.type || "received";
+        if (type === "sent") {
+            const requests = await JoinRequest.find({ requester: uid }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
+            return res.json(requests);
+        }
+        const myProjects = await Project.find({ owner: uid });
+        const requests = await JoinRequest.find({ project: { $in: myProjects.map(p => p._id) } }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
         res.json(requests);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+    } catch (e) { res.status(500).json({ message: "Server error loading requests" }); }
 });
 
-app.get("/api/requests/received/:userId", async (req, res) => {
-    try {
-        const projects = await Project.find({ owner: req.params.userId });
-        const projectIds = projects.map(p => p._id);
-        const requests = await JoinRequest.find({ project: { $in: projectIds } })
-            .populate("project", "title description")
-            .populate("requester", "name email")
-            .sort({ createdAt: -1 });
-        res.json(requests);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+app.get("/api/requests/sent/:userId", authenticateToken, async (req, res) => {
+    const requests = await JoinRequest.find({ requester: req.params.userId }).populate("project", "title description").populate("requester", POP_USER).sort({ createdAt: -1 });
+    res.json(requests);
 });
 
-app.put("/api/requests/:requestId/accept", async (req, res) => {
+app.get("/api/requests/received/:userId", authenticateToken, async (req, res) => {
+    const pids = (await Project.find({ owner: req.params.userId })).map(p => p._id);
+    const requests = await JoinRequest.find({ project: { $in: pids } }).populate("project", "title description").populate("requester", POP_USER).sort({ createdAt: -1 });
+    res.json(requests);
+});
+
+const processRequestStatus = async (requestId, status, userId, userRole) => {
+    const request = await JoinRequest.findById(requestId).populate("project");
+    if (!request) throw new Error("Request not found");
+    if (request.status !== "pending") throw new Error("Request already processed");
+
+    const project = await Project.findById(request.project._id || request.project);
+    if (!project) throw new Error("Project not found");
+    if (project.owner.toString() !== userId.toString() && userRole !== "admin") throw new Error("Only project owner can manage requests");
+
+    request.status = status;
+    await request.save();
+
+    if (status === "accepted" && !project.members.some(m => m.toString() === request.requester.toString())) {
+        project.members.push(request.requester);
+        await project.save();
+    }
+
+    await Notification.create({
+        recipient: request.requester,
+        message: status === "accepted" ? `Your request to join "${project.title}" has been accepted!` : `Your request to join "${project.title}" was declined.`,
+        type: status === "accepted" ? "request_accepted" : "request_rejected",
+        project: project._id,
+        request: request._id
+    });
+    return request;
+};
+
+app.patch("/api/requests/:requestId", authenticateToken, async (req, res) => {
     try {
-        const request = await JoinRequest.findById(req.params.requestId);
-        if (!request) return res.status(404).json({ message: "Request not found" });
-        if (request.status !== "pending") return res.status(400).json({ message: "This request has already been processed" });
+        const { status } = req.body;
+        if (!["accepted", "rejected"].includes(status)) return res.status(400).json({ message: "Status must be 'accepted' or 'rejected'" });
+        const request = await processRequestStatus(req.params.requestId, status, req.user.id || req.user._id, req.user.role);
+        res.json({ message: `Request ${status} successfully`, request });
+    } catch (e) { res.status(400).json({ message: e.message || "Could not process request" }); }
+});
 
-        const project = await Project.findById(request.project);
-        if (!project) return res.status(404).json({ message: "Project not found" });
-
-        if (!project.members.some(m => m.toString() === request.requester.toString())) {
-            project.members.push(request.requester);
-            await project.save();
-        }
-
-        request.status = "accepted";
-        await request.save();
-
-        await Notification.create({
-            recipient: request.requester,
-            message: `Your request to join "${project.title}" has been accepted.`,
-            type: "request_accepted",
-            project: project._id,
-            request: request._id
-        });
-
+app.put("/api/requests/:requestId/accept", authenticateToken, async (req, res) => {
+    try {
+        const request = await processRequestStatus(req.params.requestId, "accepted", req.user.id || req.user._id, req.user.role);
         res.json({ message: "Request accepted successfully", request });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+    } catch (e) { res.status(400).json({ message: e.message || "Could not accept request" }); }
 });
 
-app.put("/api/requests/:requestId/reject", async (req, res) => {
+app.put("/api/requests/:requestId/reject", authenticateToken, async (req, res) => {
+    try {
+        const request = await processRequestStatus(req.params.requestId, "rejected", req.user.id || req.user._id, req.user.role);
+        res.json({ message: "Request rejected successfully", request });
+    } catch (e) { res.status(400).json({ message: e.message || "Could not reject request" }); }
+});
+
+app.delete("/api/requests/:requestId", authenticateToken, async (req, res) => {
     try {
         const request = await JoinRequest.findById(req.params.requestId);
         if (!request) return res.status(404).json({ message: "Request not found" });
-        if (request.status !== "pending") return res.status(400).json({ message: "This request has already been processed" });
 
+        const uid = req.user.id || req.user._id;
         const project = await Project.findById(request.project);
-        request.status = "rejected";
-        await request.save();
-
-        if (project) {
-            await Notification.create({
-                recipient: request.requester,
-                message: `Your request to join "${project.title}" was rejected.`,
-                type: "request_rejected",
-                project: project._id,
-                request: request._id
-            });
+        if (request.requester.toString() !== uid.toString() && project?.owner.toString() !== uid.toString() && req.user.role !== "admin") {
+            return res.status(403).json({ message: "Unauthorized to delete this request" });
         }
-
-        res.json({ message: "Request rejected successfully", request });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+        await JoinRequest.findByIdAndDelete(request._id);
+        res.json({ message: "Request cancelled / deleted successfully" });
+    } catch (e) { res.status(500).json({ message: "Server error deleting request" }); }
 });
 
 // ================= NOTIFICATIONS =================
-app.get("/api/notifications/:userId", async (req, res) => {
-    try {
-        const notifications = await Notification.find({ recipient: req.params.userId })
-            .populate("project", "title")
-            .sort({ createdAt: -1 });
-        res.json(notifications);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+const getNotificationsHandler = async (req, res) => {
+    const uid = req.params.userId || req.user?.id || req.user?._id;
+    if (!uid) return res.status(401).json({ message: "User ID required" });
+    const notifications = await Notification.find({ recipient: uid }).populate("project", "title").populate("request").sort({ createdAt: -1 });
+    res.json(notifications);
+};
+app.get("/api/notifications", authenticateToken, getNotificationsHandler);
+app.get("/api/notifications/:userId", authenticateToken, getNotificationsHandler);
+
+app.put("/api/notifications/:id/read", authenticateToken, async (req, res) => {
+    const notification = await Notification.findByIdAndUpdate(req.params.id, { read: true }, { new: true });
+    if (!notification) return res.status(404).json({ message: "Notification not found" });
+    res.json(notification);
 });
 
-app.put("/api/notifications/:id/read", async (req, res) => {
+const markAllReadHandler = async (req, res) => {
+    const uid = req.params.userId || req.user?.id || req.user?._id;
+    if (!uid) return res.status(401).json({ message: "User ID required" });
+    await Notification.updateMany({ recipient: uid, read: false }, { $set: { read: true } });
+    res.json({ message: "All notifications marked as read" });
+};
+app.put("/api/notifications/read-all", authenticateToken, markAllReadHandler);
+app.put("/api/notifications/read-all/:userId", authenticateToken, markAllReadHandler);
+
+app.put("/api/notifications/:notificationId/accept-invite", authenticateToken, async (req, res) => {
     try {
-        const notification = await Notification.findByIdAndUpdate(req.params.id, { read: true }, { new: true });
-        if (!notification) return res.status(404).json({ message: "Notification not found" });
-        res.json(notification);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
+        const notif = await Notification.findById(req.params.notificationId);
+        if (!notif || notif.type !== "project_invite") return res.status(400).json({ message: "Invalid invitation" });
+        const project = await Project.findById(notif.project);
+        if (!project) return res.status(404).json({ message: "Project no longer exists" });
 
-app.put("/api/notifications/read-all/:userId", async (req, res) => {
-    try {
-        await Notification.updateMany({ recipient: req.params.userId, read: false }, { $set: { read: true } });
-        res.json({ message: "All notifications marked as read" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
-});
-
-app.put("/api/notifications/:notificationId/accept-invite", async (req, res) => {
-    try {
-        const notification = await Notification.findById(req.params.notificationId);
-        if (!notification) return res.status(404).json({ message: "Invitation not found" });
-        if (notification.type !== "project_invite") return res.status(400).json({ message: "This notification is not a project invitation" });
-
-        const project = await Project.findById(notification.project);
-        if (!project) return res.status(404).json({ message: "Project not found" });
-
-        if (!project.members.some(m => m.toString() === notification.recipient.toString())) {
-            project.members.push(notification.recipient);
+        if (!project.members.some(m => m.toString() === notif.recipient.toString())) {
+            project.members.push(notif.recipient);
             await project.save();
         }
-
-        notification.read = true;
-        await notification.save();
-        res.json({ message: "Invitation accepted successfully", project });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+        notif.read = true;
+        await notif.save();
+        res.json({ message: "Invitation accepted successfully! You are now a project member.", project });
+    } catch (e) { res.status(500).json({ message: "Server error accepting invitation" }); }
 });
 
-app.put("/api/notifications/:notificationId/reject-invite", async (req, res) => {
-    try {
-        const notification = await Notification.findById(req.params.notificationId);
-        if (!notification) return res.status(404).json({ message: "Invitation not found" });
-        if (notification.type !== "project_invite") return res.status(400).json({ message: "This notification is not a project invitation" });
-
-        notification.read = true;
-        await notification.save();
-        res.json({ message: "Invitation rejected successfully" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-    }
+app.put("/api/notifications/:notificationId/reject-invite", authenticateToken, async (req, res) => {
+    const notif = await Notification.findById(req.params.notificationId);
+    if (!notif || notif.type !== "project_invite") return res.status(400).json({ message: "Invalid invitation" });
+    notif.read = true;
+    await notif.save();
+    res.json({ message: "Invitation declined" });
 });
 
 // ================= MESSAGES =================
-app.post("/api/messages", async (req, res) => {
+app.post("/api/messages", authenticateToken, async (req, res) => {
     try {
-        const { sender, receiver, message } = req.body;
-        if (!sender || !receiver || !message || !message.trim()) {
-            return res.status(400).json({ message: "Sender, receiver and message are required" });
-        }
-        if (sender.toString() === receiver.toString()) {
-            return res.status(400).json({ message: "You cannot message yourself" });
-        }
+        const sender = req.user.id || req.user._id || req.body.sender;
+        const { receiver, message } = req.body;
+        if (!sender || !receiver || !message?.trim()) return res.status(400).json({ message: "Sender, receiver, and message text are required" });
+        if (sender.toString() === receiver.toString()) return res.status(400).json({ message: "You cannot message yourself" });
 
-        const [senderUser, receiverUser] = await Promise.all([User.findById(sender), User.findById(receiver)]);
-        if (!senderUser || !receiverUser) return res.status(404).json({ message: "User not found" });
+        const [sUser, rUser] = await Promise.all([User.findById(sender), User.findById(receiver)]);
+        if (!sUser || !rUser) return res.status(404).json({ message: "User not found" });
 
-        const newMessage = await Message.create({ sender, receiver, message: message.trim() });
-        const populatedMessage = await Message.findById(newMessage._id)
-            .populate("sender", "name profileImage")
-            .populate("receiver", "name profileImage");
-
-        res.status(201).json(populatedMessage);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not send message" });
-    }
+        const msg = await Message.create({ sender, receiver, message: message.trim() });
+        res.status(201).json(await Message.findById(msg._id).populate("sender receiver", POP_USER));
+    } catch (e) { res.status(500).json({ message: "Could not send message" }); }
 });
 
-app.get("/api/messages/:user1/:user2", async (req, res) => {
+app.get("/api/messages/:user1/:user2", authenticateToken, async (req, res) => {
     try {
         const { user1, user2 } = req.params;
-        const messages = await Message.find({
-            $or: [
-                { sender: user1, receiver: user2 },
-                { sender: user2, receiver: user1 }
-            ]
-        })
-            .populate("sender", "name profileImage")
-            .populate("receiver", "name profileImage")
-            .sort({ createdAt: 1 });
+        const currentUserId = req.user.id || req.user._id;
+        if (currentUserId !== user1 && currentUserId !== user2 && req.user.role !== "admin") return res.status(403).json({ message: "Unauthorized" });
 
+        const messages = await Message.find({ $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }] }).populate("sender receiver", POP_USER).sort({ createdAt: 1 });
+        await Message.updateMany({ sender: user2 === currentUserId ? user1 : user2, receiver: currentUserId, read: false }, { $set: { read: true } });
         res.json(messages);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not load messages" });
-    }
+    } catch (e) { res.status(500).json({ message: "Could not load messages" }); }
 });
 
-app.put("/api/messages/read/:userId/:otherUserId", async (req, res) => {
-    try {
-        await Message.updateMany(
-            { sender: req.params.otherUserId, receiver: req.params.userId, read: false },
-            { $set: { read: true } }
-        );
-        res.json({ message: "Messages marked as read" });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not mark messages as read" });
-    }
+app.put("/api/messages/read/:userId/:otherUserId", authenticateToken, async (req, res) => {
+    await Message.updateMany({ sender: req.params.otherUserId, receiver: req.params.userId, read: false }, { $set: { read: true } });
+    res.json({ message: "Messages marked as read" });
 });
 
-const getInboxHandler = async (req, res) => {
+const getConversationsHandler = async (req, res) => {
     try {
-        const userId = req.params.userId;
-        const messages = await Message.find({
-            $or: [{ sender: userId }, { receiver: userId }]
-        })
-            .populate("sender", "name profileImage")
-            .populate("receiver", "name profileImage")
-            .sort({ createdAt: -1 });
+        const uid = req.params.userId || req.user?.id || req.user?._id;
+        if (!uid) return res.status(401).json({ message: "User ID required" });
 
+        const messages = await Message.find({ $or: [{ sender: uid }, { receiver: uid }] }).populate("sender receiver", POP_USER).sort({ createdAt: -1 });
         const conversations = [];
-        const addedUsers = new Set();
+        const seen = new Set();
 
-        for (const message of messages) {
-            const senderId = message.sender._id.toString();
-            const receiverId = message.receiver._id.toString();
-            const otherUserId = senderId === userId ? receiverId : senderId;
+        for (const msg of messages) {
+            if (!msg.sender || !msg.receiver) continue;
+            const other = msg.sender._id.toString() === uid.toString() ? msg.receiver : msg.sender;
+            const otherId = other._id.toString();
+            if (seen.has(otherId)) continue;
+            seen.add(otherId);
 
-            if (addedUsers.has(otherUserId)) continue;
-            addedUsers.add(otherUserId);
-
-            const otherUser = senderId === userId ? message.receiver : message.sender;
-            const unreadCount = await Message.countDocuments({
-                sender: otherUserId,
-                receiver: userId,
-                read: false
-            });
-
+            const unreadCount = await Message.countDocuments({ sender: otherId, receiver: uid, read: false });
             conversations.push({
-                user: {
-                    _id: otherUser._id,
-                    name: otherUser.name,
-                    profileImage: otherUser.profileImage || ""
-                },
-                lastMessage: message.message,
-                lastMessageTime: message.createdAt,
+                user: { _id: other._id, name: other.name, profileImage: other.profileImage || "" },
+                otherUser: { _id: other._id, name: other.name, profileImage: other.profileImage || "" },
+                lastMessage: { content: msg.message, createdAt: msg.createdAt },
+                lastMessageText: msg.message,
+                lastMessageTime: msg.createdAt,
                 unreadCount
             });
         }
-
         res.json(conversations);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Could not load conversations" });
-    }
+    } catch (e) { res.status(500).json({ message: "Could not load conversations" }); }
 };
+app.get("/api/messages/conversations", authenticateToken, getConversationsHandler);
+app.get("/api/messages/user/:userId", authenticateToken, getConversationsHandler);
+app.get("/api/message-inbox/:userId", authenticateToken, getConversationsHandler);
 
-app.get("/api/messages/user/:userId", getInboxHandler);
-app.get("/api/message-inbox/:userId", getInboxHandler);
+// ================= DASHBOARD =================
+app.get("/api/dashboard/:userId", authenticateToken, async (req, res) => {
+    try {
+        const uid = req.params.userId || req.user.id;
+        const user = await User.findById(uid).select("-password");
+        if (!user) return res.status(404).json({ message: "User not found" });
 
-// ================= START SERVER =================
+        const [projects, teammates, myProjects, pendingRequests] = await Promise.all([
+            Project.find().populate("owner members", POP_USER).sort({ createdAt: -1 }),
+            User.find({ _id: { $ne: uid } }).select("-password").sort({ name: 1 }),
+            Project.find({ owner: uid }),
+            JoinRequest.countDocuments({ project: { $in: (await Project.find({ owner: uid })).map(p => p._id) }, status: "pending" })
+        ]);
+
+        res.json({
+            user: formatUser(user),
+            teammatesCount: teammates.length,
+            myProjectsCount: myProjects.length,
+            pendingRequestsCount: pendingRequests,
+            featuredProjects: projects.slice(0, 4),
+            teammates: teammates.slice(0, 4).map(formatUser)
+        });
+    } catch (e) { res.status(500).json({ message: "Could not load dashboard data" }); }
+});
+
+// ================= ADMIN =================
+app.get("/api/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const [totalUsers, totalProjects, totalRequests, totalMessages] = await Promise.all([User.countDocuments(), Project.countDocuments(), JoinRequest.countDocuments(), Message.countDocuments()]);
+        res.json({ totalUsers, totalProjects, totalRequests, totalMessages });
+    } catch (e) { res.status(500).json({ message: "Could not load admin stats" }); }
+});
+
+app.get("/api/admin/users", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const users = await User.find().select("-password").sort({ createdAt: -1 });
+        res.json(users.map(formatUser));
+    } catch (e) { res.status(500).json({ message: "Could not load users" }); }
+});
+
+app.delete("/api/admin/users/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const uid = req.params.id;
+        const user = await User.findById(uid);
+        if (!user) return res.status(404).json({ message: "User not found" });
+
+        if (user.profileImage?.startsWith("/uploads/")) {
+            const img = path.join(__dirname, user.profileImage);
+            if (fs.existsSync(img)) fs.unlink(img, () => {});
+        }
+
+        await Promise.all([
+            User.findByIdAndDelete(uid),
+            Project.deleteMany({ owner: uid }),
+            Project.updateMany({ members: uid }, { $pull: { members: uid } }),
+            JoinRequest.deleteMany({ requester: uid }),
+            Notification.deleteMany({ recipient: uid }),
+            Message.deleteMany({ $or: [{ sender: uid }, { receiver: uid }] })
+        ]);
+        res.json({ message: "User and all associated data deleted successfully" });
+    } catch (e) { res.status(500).json({ message: "Could not delete user" }); }
+});
+
+app.delete("/api/admin/projects/:id", authenticateToken, requireAdmin, async (req, res) => {
+    try {
+        const pid = req.params.id;
+        await Promise.all([Project.findByIdAndDelete(pid), JoinRequest.deleteMany({ project: pid }), Notification.deleteMany({ project: pid })]);
+        res.json({ message: "Project deleted successfully" });
+    } catch (e) { res.status(500).json({ message: "Could not delete project" }); }
+});
+
+// ================= ERROR & START =================
+app.use((req, res) => res.status(404).json({ message: `Endpoint ${req.method} ${req.originalUrl} not found` }));
+app.use((err, req, res, next) => res.status(500).json({ message: "Internal server error", error: err.message }));
+
 const PORT = process.env.PORT || 5000;
-
-if (!process.env.MONGO_URI) {
-    console.error("FATAL: MONGO_URI environment variable is not set!");
-    process.exit(1);
+if (process.env.NODE_ENV !== "test") {
+    mongoose.connect(process.env.MONGO_URI || "mongodb://127.0.0.1:27017/skillhub")
+        .then(() => app.listen(PORT, () => console.log(`Skill Hub Server running on port ${PORT}`)))
+        .catch(e => {
+            console.error("MongoDB connection failed:", e.message);
+            app.listen(PORT, () => console.log(`Server running in degraded mode on port ${PORT} (DB offline)`));
+        });
 }
 
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => {
-        console.log("MongoDB Atlas connected");
-        app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-    })
-    .catch(error => {
-        console.error("MongoDB connection failed:", error.message);
-        process.exit(1);
-    });
+module.exports = app;

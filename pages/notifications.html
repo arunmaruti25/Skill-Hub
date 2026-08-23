@@ -7,35 +7,8 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-:root {
-        --c-white:       #FFFFFF;
-        --c-bg-light:    #EAF6FF;
-        --c-border:      #C1E5FF;
-        --c-sky-mid:     #9CD5FF;
-        --c-blue-primary:#6AB0E3;
-        --c-text-dark:   #001D39;
-        --c-error: #ef4444;
-        --c-success: #22c55e;
-        --c-warning: #f59e0b;
-    }
-    .notification-actions { display: flex; gap: 10px; margin-top: 15px; }
-    .accept-btn, .reject-btn { padding: 10px 18px; border-radius: 7px; cursor: pointer; font-weight: 600; }
-    .accept-btn { background: var(--c-blue-primary); color: var(--c-white); border: none; }
-    .reject-btn { background: transparent; color: var(--c-blue-primary); border: 1px solid var(--c-blue-primary); }
-    .accept-btn:hover, .reject-btn:hover { opacity: .85; transform: translateY(-2px); }
-    .notification-message { font-size: 16px; margin-top: 10px; color: #2F4156; }
-    .notification-time { font-size: 13px; color: #2F4156; margin-top: 5px; }
-    .empty-notifications { text-align: center; padding: 40px; color: #2F4156; }
-    .sidebar-badge-link { display: flex !important; align-items: center; }
-    .sidebar-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
-    .notification-card {
-        border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: 20px; margin-bottom: 15px;
-        background: var(--card-bg);
-    }
-    .notification-card.unread { background: rgba(106,176,227,0.05); border-color: var(--c-blue-primary); }
-    .project-name { font-weight: 700; color: #001D39; margin-bottom: 5px; }
-    .requester-name { color: #2F4156; font-size: 14px; }
-</style>
+        .notification-actions { display: flex; gap: 10px; margin-top: 12px; }
+    </style>
 </head>
 <body>
 <aside class="sidebar">
@@ -44,17 +17,14 @@
         <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
         <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
-        <a href="requests.html" class="sidebar-badge-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
-        <a href="notifications.html" class="active sidebar-badge-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
-        <a href="messages.html" class="sidebar-badge-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
-        <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
-            <i class="fa-solid fa-user-shield"></i>
-            <span>Admin Panel</span>
-        </a>
+        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html" class="active"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+        <a href="admin.html" id="adminNavLink" style="display:none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
     </nav>
     <div class="sidebar-bottom">
         <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
-        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <a href="javascript:void(0)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </div>
 </aside>
 
@@ -62,81 +32,128 @@
     <div class="page-head">
         <div>
             <h1>Notifications</h1>
-            <p>Stay updated with your project activities</p>
+            <p>Stay updated on invitations, join requests, and project activity.</p>
         </div>
+        <button class="outline-btn" id="markAllBtn" onclick="markAllNotificationsRead()"><i class="fa-solid fa-check-double"></i> Mark All as Read</button>
     </div>
 
     <div id="notificationsList">
-        <div class="empty-notifications">
-            <i class="fa-solid fa-bell-slash" style="font-size:48px;color:var(--c-border);margin-bottom:15px;"></i>
-            <h3>No notifications</h3>
-            <p>You're all caught up!</p>
-        </div>
+        <p class="section-text" style="color:var(--c-text-secondary);">Loading notifications...</p>
     </div>
 </main>
 
+<div id="toast-container"></div>
+
 <script src="../js/auth.js"></script>
 <script>
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
-    : "https://skill-hub-backend-4w35.onrender.com";
-
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    if (!token) return window.location.href = 'login.html';
+    if (!requireAuth()) return;
     loadNotifications();
 });
 
-function logout() { localStorage.clear(); window.location.href = '../index.html'; }
-
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-const adminLink = document.getElementById('adminNavLink');
-if (adminLink && (user.role === 'admin' || user.isAdmin)) {
-    adminLink.style.display = 'flex';
-}
-
 async function loadNotifications() {
-    const token = localStorage.getItem('token');
+    const container = document.getElementById('notificationsList');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/notifications`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const notifications = await res.json();
-        const container = document.getElementById('notificationsList');
-        
-        if (notifications.length === 0) return;
-        
-        container.innerHTML = notifications.map(n => `
-            <div class="notification-card ${n.read ? '' : 'unread'}">
-                <div class="project-name">${n.projectTitle || 'Project Update'}</div>
-                <div class="notification-message">${n.message}</div>
-                <div class="notification-time">${new Date(n.createdAt).toLocaleString()}</div>
-                ${n.type === 'join_request' && n.status === 'pending' ? `
-                    <div class="notification-actions">
-                        <button class="accept-btn" onclick="handleRequest('${n._id}', 'accepted')"><i class="fa-solid fa-check"></i> Accept</button>
-                        <button class="reject-btn" onclick="handleRequest('${n._id}', 'rejected')"><i class="fa-solid fa-xmark"></i> Reject</button>
-                    </div>
-                ` : ''}
-            </div>
-        `).join('');
-        
-        const unreadCount = notifications.filter(n => !n.read).length;
-        document.getElementById('notificationBadge').textContent = unreadCount;
-        document.getElementById('notificationBadge').style.display = unreadCount ? 'flex' : 'none';
+        const res = await authFetch('/api/notifications');
+        if (res && res.ok) {
+            const notifs = await res.json();
+            renderNotifications(notifs);
+            updateSidebarBadges();
+        } else {
+            container.innerHTML = '<p class="section-text" style="color:var(--c-error);">Failed to load notifications.</p>';
+        }
     } catch (err) {
-        console.error('Load notifications error:', err);
+        console.error('loadNotifications error:', err);
+        container.innerHTML = '<p class="section-text" style="color:var(--c-error);">Network error loading notifications.</p>';
     }
 }
 
-async function handleRequest(id, action) {
-    const token = localStorage.getItem('token');
+function renderNotifications(notifs) {
+    const container = document.getElementById('notificationsList');
+    if (!notifs || !notifs.length) {
+        container.innerHTML = `
+            <div class="dash-card" style="text-align:center;padding:50px 20px;">
+                <i class="fa-solid fa-bell-slash" style="font-size:44px;color:var(--c-border);margin-bottom:14px;display:block;"></i>
+                <h3 style="color:var(--c-dark);margin-bottom:6px;">All Caught Up!</h3>
+                <p style="color:var(--c-text-secondary);">You have no unread notifications at this time.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = notifs.map(n => `
+        <div class="notification-card ${n.read ? '' : 'unread'}" id="notif-${n._id}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+                <div style="flex:1;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-weight:700;color:var(--c-dark);font-size:15px;">${n.project?.title || 'System Notification'}</span>
+                        ${!n.read ? '<span style="background:var(--c-primary);color:white;font-size:10px;font-weight:800;padding:2px 8px;border-radius:10px;">NEW</span>' : ''}
+                    </div>
+                    <p style="margin:6px 0;font-size:14px;color:var(--c-text-dark);">${n.message}</p>
+                    <small style="color:var(--c-text-secondary);font-size:12px;">${new Date(n.createdAt).toLocaleString()}</small>
+                </div>
+                
+                <div style="display:flex;align-items:center;gap:8px;">
+                    ${!n.read ? `
+                        <button class="outline-btn" onclick="markNotificationRead('${n._id}')" style="padding:6px 12px;font-size:12px;">
+                            <i class="fa-solid fa-check"></i> Read
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+
+            ${n.type === 'project_invite' ? `
+                <div class="notification-actions">
+                    <button class="accept-btn" onclick="handleProjectInvite('${n._id}', 'accept')"><i class="fa-solid fa-check"></i> Accept Invitation</button>
+                    <button class="btn-delete" onclick="handleProjectInvite('${n._id}', 'reject')"><i class="fa-solid fa-xmark"></i> Decline</button>
+                </div>
+            ` : ''}
+        </div>
+    `).join('');
+}
+
+async function markNotificationRead(id) {
     try {
-        await fetch(`${API_BASE_URL}/api/requests/${id}`, {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ status: action })
-        });
-        loadNotifications();
+        const res = await authFetch(`/api/notifications/${id}/read`, { method: 'PUT' });
+        if (res && res.ok) {
+            const card = document.getElementById(`notif-${id}`);
+            if (card) card.classList.remove('unread');
+            loadNotifications();
+        }
     } catch (err) {
-        console.error('Handle request error:', err);
+        console.error('markNotificationRead error:', err);
+    }
+}
+
+async function markAllNotificationsRead() {
+    try {
+        const res = await authFetch('/api/notifications/read-all', { method: 'PUT' });
+        if (res && res.ok) {
+            showToast('All notifications marked as read.', 'success');
+            loadNotifications();
+        }
+    } catch (err) {
+        showToast('Failed to mark notifications read.', 'error');
+    }
+}
+
+async function handleProjectInvite(notificationId, action) {
+    try {
+        const endpoint = action === 'accept'
+            ? `/api/notifications/${notificationId}/accept-invite`
+            : `/api/notifications/${notificationId}/reject-invite`;
+
+        const res = await authFetch(endpoint, { method: 'PUT' });
+        if (res && res.ok) {
+            showToast(`Invitation ${action === 'accept' ? 'accepted' : 'declined'}.`, 'success');
+            loadNotifications();
+            updateSidebarBadges();
+        } else {
+            const err = res ? await res.json() : {};
+            showToast(err.message || 'Action failed', 'error');
+        }
+    } catch (err) {
+        showToast('Network error responding to invite', 'error');
     }
 }
 </script>

@@ -6,6 +6,14 @@
     <title>User Profile - Skill Hub</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        .profile-header-card {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+    </style>
 </head>
 <body>
 <aside class="sidebar">
@@ -14,126 +22,202 @@
         <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="teammates.html" class="active"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
         <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
-        <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
-        <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
-        <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
-        <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
-            <i class="fa-solid fa-user-shield"></i>
-            <span>Admin Panel</span>
-        </a>
+        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+        <a href="admin.html" id="adminNavLink" style="display:none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
     </nav>
     <div class="sidebar-bottom">
         <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
-        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <a href="javascript:void(0)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </div>
 </aside>
 
 <main class="dashboard">
     <div class="page-head">
         <div>
-            <h1>User Profile</h1>
-            <p>View teammate information and skills.</p>
+            <h1 id="userHeading">Teammate Profile</h1>
+            <p>View developer expertise, background, and project portfolio.</p>
         </div>
-        <button class="outline-btn" onclick="goBack()"><i class="fa-solid fa-arrow-left"></i> Back to Teammates</button>
+        <button class="outline-btn" onclick="window.history.back()"><i class="fa-solid fa-arrow-left"></i> Back</button>
     </div>
 
-    <section class="dash-card profile-header">
-        <div class="big-avatar" id="userAvatar">U</div>
-        <div>
-            <h2 id="userName">Loading...</h2>
-            <p id="userRole">Developer</p>
-            <small>Member since <span id="userJoinDate">January 2024</span></small>
+    <section class="dash-card profile-header-card">
+        <div class="big-avatar" id="userAvatar" style="width:90px;height:90px;font-size:32px;border:3px solid var(--c-ice);">U</div>
+        <div style="flex:1;min-width:220px;">
+            <h2 id="userName" style="margin:0 0 4px;color:var(--c-dark);font-size:24px;">Loading...</h2>
+            <p id="userProfession" style="color:var(--c-primary);font-weight:600;font-size:14px;margin:0 0 4px;">Developer</p>
+            <p id="userLocation" style="color:var(--c-text-secondary);font-size:13px;margin:0 0 8px;"></p>
+            <small style="color:var(--c-text-secondary);font-size:12.5px;">Member since <span id="userJoinDate">Recently</span></small>
+
+            <div id="userActions" style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;"></div>
         </div>
     </section>
 
-    <section class="dash-card">
-        <h2>About</h2>
-        <p id="userBio" style="color:#2F4156;">No bio provided.</p>
-    </section>
+    <div class="dashboard-grid">
+        <section class="dash-card">
+            <h2>About</h2>
+            <p id="userBio" style="color:var(--c-text-dark);font-size:14px;line-height:1.6;white-space:pre-wrap;">No bio provided yet.</p>
+            
+            <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
+                <div id="githubBadge" style="display:none;">
+                    <a id="githubLink" href="#" target="_blank" class="outline-btn" style="padding:6px 12px;font-size:12.5px;">
+                        <i class="fa-brands fa-github"></i> GitHub
+                    </a>
+                </div>
+                <div id="linkedinBadge" style="display:none;">
+                    <a id="linkedinLink" href="#" target="_blank" class="outline-btn" style="padding:6px 12px;font-size:12.5px;">
+                        <i class="fa-brands fa-linkedin"></i> LinkedIn
+                    </a>
+                </div>
+            </div>
+        </section>
 
-    <section class="dash-card">
-        <div class="card-title"><h2>Skills</h2></div>
-        <div class="tags" id="userSkills"></div>
-    </section>
+        <section class="dash-card">
+            <h2>Skills & Experience</h2>
+            <div style="margin-bottom:14px;">
+                <div style="font-size:12.5px;font-weight:700;color:var(--c-text-secondary);margin-bottom:6px;">SKILLS</div>
+                <div class="tags" id="userSkills"></div>
+            </div>
+            
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--c-border);">
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:var(--c-text-secondary);">EXPERIENCE</div>
+                    <div id="userExperience" style="font-size:14px;font-weight:700;color:var(--c-dark);margin-top:2px;">Beginner</div>
+                </div>
+                <div>
+                    <div style="font-size:12px;font-weight:700;color:var(--c-text-secondary);">AVAILABILITY</div>
+                    <div id="userAvailability" style="font-size:14px;font-weight:700;color:var(--c-primary);margin-top:2px;">Available</div>
+                </div>
+            </div>
+        </section>
+    </div>
 
     <section class="dash-card">
         <h2>Projects</h2>
-        <div id="userProjects">
-            <p class="section-text">Loading...</p>
+        <div id="userProjectsList">
+            <p class="section-text" style="color:var(--c-text-secondary);">Loading projects...</p>
         </div>
     </section>
 </main>
 
+<div id="toast-container"></div>
+
 <script src="../js/auth.js"></script>
 <script>
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
-    : "https://skill-hub-backend-4w35.onrender.com";
-
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!token) return window.location.href = 'login.html';
-
-    const adminLink = document.getElementById("adminNavLink");
-    if (adminLink && (user.role === "admin" || user.isAdmin)) {
-        adminLink.style.display = "flex";
-    }
+    if (!requireAuth()) return;
 
     const urlParams = new URLSearchParams(window.location.search);
-    const targetId = urlParams.get('id');
+    const userId = urlParams.get('id');
 
-    // Only trigger if on user-profile.html
-    if (typeof loadUserProfile === "function" && targetId) loadUserProfile(targetId);
-    // Only trigger if on project-details.html
-    if (typeof loadProject === "function" && targetId) loadProject(targetId);
+    if (userId) {
+        loadUserProfile(userId);
+    } else {
+        showToast('No user specified.', 'error');
+        setTimeout(() => window.location.href = 'teammates.html', 1500);
+    }
 });
 
-function logout() { localStorage.clear(); window.location.href = '../index.html'; }
-function goBack() { window.history.back(); }
-
 async function loadUserProfile(userId) {
-    const token = localStorage.getItem('token');
+    const currentUser = getAuthUser();
+    const currentUserId = currentUser.id || currentUser._id;
+    const isSelf = userId === currentUserId;
+
     try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/${userId}`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const res = await authFetch(`/api/profile/${userId}`);
+        if (!res || !res.ok) {
+            document.getElementById('userName').textContent = 'User Not Found';
+            showToast('Could not load user profile.', 'error');
+            return;
+        }
+
         const user = await res.json();
-        
-        document.getElementById('userName').textContent = user.name || 'User';
-        document.getElementById('userRole').textContent = user.role || 'Developer';
-        document.getElementById('userAvatar').textContent = (user.name || 'U').charAt(0).toUpperCase();
-        document.getElementById('userJoinDate').textContent = new Date(user.createdAt).toLocaleDateString('en-US', {month:'long',year:'numeric'});
+        const displayName = user.name || 'User';
+
+        document.getElementById('userHeading').textContent = `${displayName}'s Profile`;
+        document.getElementById('userName').textContent = displayName;
+        document.getElementById('userProfession').textContent = user.profession || 'Developer';
+        document.getElementById('userLocation').textContent = user.location ? `📍 ${user.location}` : '';
         document.getElementById('userBio').textContent = user.bio || 'No bio provided.';
-        
+        document.getElementById('userExperience').textContent = user.experience || 'Beginner';
+        document.getElementById('userAvailability').textContent = user.availability || 'Available';
+
+        if (user.createdAt) {
+            document.getElementById('userJoinDate').textContent = new Date(user.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        }
+
+        const avatar = document.getElementById('userAvatar');
+        if (user.profileImage) {
+            avatar.innerHTML = `<img src="${user.profileImage.startsWith('http') ? user.profileImage : API_BASE_URL + user.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+        } else {
+            avatar.textContent = displayName.charAt(0).toUpperCase();
+        }
+
+        // Links
+        if (user.github) {
+            const ghBadge = document.getElementById('githubBadge');
+            const ghLink = document.getElementById('githubLink');
+            ghLink.href = user.github.startsWith('http') ? user.github : `https://${user.github}`;
+            ghBadge.style.display = 'block';
+        }
+        if (user.linkedin) {
+            const liBadge = document.getElementById('linkedinBadge');
+            const liLink = document.getElementById('linkedinLink');
+            liLink.href = user.linkedin.startsWith('http') ? user.linkedin : `https://${user.linkedin}`;
+            liBadge.style.display = 'block';
+        }
+
+        // Skills
         const skillsContainer = document.getElementById('userSkills');
-        (user.skills || []).forEach(s => {
-            const span = document.createElement('span');
-            span.textContent = s;
-            skillsContainer.appendChild(span);
-        });
+        if (user.skills && user.skills.length) {
+            skillsContainer.innerHTML = user.skills.map(s => `<span>${s}</span>`).join('');
+        } else {
+            skillsContainer.innerHTML = '<span style="color:var(--c-text-secondary);font-size:12.5px;">No skills listed.</span>';
+        }
+
+        // Actions
+        const actionsContainer = document.getElementById('userActions');
+        if (isSelf) {
+            actionsContainer.innerHTML = `<a href="profile.html" class="primary-btn"><i class="fa-solid fa-pen-to-square"></i> Edit My Profile</a>`;
+        } else {
+            actionsContainer.innerHTML = `
+                <a href="chat.html?user=${user._id || user.id}" class="primary-btn"><i class="fa-solid fa-comment-dots"></i> Send Message</a>
+            `;
+        }
 
         loadUserProjects(userId);
     } catch (err) {
-        console.error('Load user profile error:', err);
+        console.error('loadUserProfile error:', err);
     }
 }
 
 async function loadUserProjects(userId) {
-    const token = localStorage.getItem('token');
+    const container = document.getElementById('userProjectsList');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/projects`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const allProjects = await res.json();
-        const userProjects = allProjects.filter(p => p.owner?._id === userId);
+        const res = await authFetch(`/api/users/${userId}/projects`);
+        if (res && res.ok) {
+            const projects = await res.json();
+            if (!projects.length) {
+                container.innerHTML = '<p class="section-text" style="color:var(--c-text-secondary);">No public projects created or joined yet.</p>';
+                return;
+            }
 
-        document.getElementById('userProjects').innerHTML = userProjects.length ? userProjects.map(p => `
-            <div class="project">
-                <div class="project-icon"><i class="fa-solid fa-code"></i></div>
-                <div><h3>${p.title}</h3><p>${p.description?.substring(0,80)}...</p></div>
-                <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
-            </div>
-        `).join('') : '<p class="section-text">No projects yet.</p>';
+            container.innerHTML = projects.map(p => `
+                <div class="project">
+                    <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+                    <div style="flex:1;">
+                        <h3>${p.title}</h3>
+                        <p>${p.description ? p.description.substring(0, 80) + '...' : ''}</p>
+                    </div>
+                    <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="section-text" style="color:var(--c-error);">Could not load projects.</p>';
+        }
     } catch (err) {
-        console.error('Load projects error:', err);
-        document.getElementById('userProjects').innerHTML = '<p class="section-text">Failed to load projects.</p>';
+        console.error('loadUserProjects error:', err);
     }
 }
 </script>

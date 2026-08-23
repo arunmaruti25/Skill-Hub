@@ -14,17 +14,14 @@
         <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
         <a href="projects.html" class="active"><i class="fa-solid fa-folder"></i> Projects</a>
-        <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
-        <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
-        <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
-        <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
-            <i class="fa-solid fa-user-shield"></i>
-            <span>Admin Panel</span>
-        </a>
+        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+        <a href="admin.html" id="adminNavLink" style="display:none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
     </nav>
     <div class="sidebar-bottom">
         <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
-        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <a href="javascript:void(0)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </div>
 </aside>
 
@@ -32,222 +29,323 @@
     <div class="page-head">
         <div>
             <h1 id="projectTitle">Loading project...</h1>
-            <p>Project Details</p>
+            <p>Project Details & Collaboration</p>
         </div>
         <a href="projects.html" class="outline-btn"><i class="fa-solid fa-arrow-left"></i> Back to Projects</a>
     </div>
 
     <section class="dash-card">
-        <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:20px;">
-            <div class="project-icon" style="width:80px;height:80px;min-width:80px;font-size:28px;"></div>
+        <div style="display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;margin-bottom:24px;">
+            <div class="project-icon" style="width:70px;height:70px;min-width:70px;font-size:26px;"><i class="fa-solid fa-code"></i></div>
             <div style="flex:1;min-width:250px;">
-                <h2 id="projectTitleDetail" style="color:#001D39;"></h2>
-                <p id="projectDescription" style="color:#2F4156;margin:10px 0;"></p>
+                <h2 id="projectTitleDetail" style="color:var(--c-dark);font-size:24px;margin-bottom:6px;"></h2>
+                <p id="projectDescription" style="color:var(--c-text-secondary);margin:8px 0 16px;font-size:14.5px;line-height:1.6;"></p>
                 <div class="tags" id="projectSkills"></div>
             </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:20px;">
-            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
-                <div style="color:#2F4156;font-size:12px;font-weight:600;">Owner</div>
-                <div id="projectOwner" style="color:#001D39;font-weight:700;"></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px;">
+            <div style="padding:14px 18px;background:#FAFCFE;border-radius:var(--radius-md);border:1px solid var(--c-border);">
+                <div style="color:var(--c-text-secondary);font-size:12px;font-weight:700;">Owner</div>
+                <div id="projectOwner" style="color:var(--c-dark);font-weight:700;font-size:15px;margin-top:2px;"></div>
             </div>
-            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
-                <div style="color:#2F4156;font-size:12px;font-weight:600;">Members</div>
-                <div id="projectMembers" style="color:#001D39;font-weight:700;"></div>
+            <div style="padding:14px 18px;background:#FAFCFE;border-radius:var(--radius-md);border:1px solid var(--c-border);">
+                <div style="color:var(--c-text-secondary);font-size:12px;font-weight:700;">Members</div>
+                <div id="projectMembersCount" style="color:var(--c-dark);font-weight:700;font-size:15px;margin-top:2px;"></div>
             </div>
-            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
-                <div style="color:#2F4156;font-size:12px;font-weight:600;">Created</div>
-                <div id="projectCreated" style="color:#001D39;font-weight:700;"></div>
-            </div>
-            <div style="padding:15px;background:var(--c-surface);border-radius:var(--radius-md);border:1px solid var(--c-border);">
-                <div style="color:#2F4156;font-size:12px;font-weight:600;">Status</div>
-                <div id="projectStatus" style="color:#001D39;font-weight:700;"></div>
+            <div style="padding:14px 18px;background:#FAFCFE;border-radius:var(--radius-md);border:1px solid var(--c-border);">
+                <div style="color:var(--c-text-secondary);font-size:12px;font-weight:700;">Created On</div>
+                <div id="projectCreated" style="color:var(--c-dark);font-weight:700;font-size:15px;margin-top:2px;"></div>
             </div>
         </div>
 
-        <div id="projectActions" style="display:flex;gap:10px;"></div>
+        <div id="projectActions" style="display:flex;gap:12px;flex-wrap:wrap;"></div>
     </section>
 
     <section class="dash-card">
         <h2>Team Members</h2>
-        <div id="teamMembers" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px;">
-            <p class="section-text">Loading...</p>
+        <div id="teamMembers" class="people" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));">
+            <p class="section-text" style="color:var(--c-text-secondary);">Loading members...</p>
         </div>
     </section>
 
-    <section class="dash-card">
-        <h2>Join Requests</h2>
+    <section class="dash-card" id="joinRequestsSection" style="display:none;">
+        <h2>Pending Join Requests</h2>
         <div id="joinRequests">
-            <p class="section-text">Loading...</p>
+            <p class="section-text" style="color:var(--c-text-secondary);">Loading requests...</p>
         </div>
     </section>
 </main>
 
+<!-- Edit Project Modal -->
+<div id="editProjectModal" class="modal">
+    <div class="auth-box">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+            <h2 style="margin:0;font-size:22px;color:var(--c-dark);">Edit Project</h2>
+            <button type="button" class="outline-btn" onclick="closeEditProject()" style="padding:6px 12px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="editProjectForm">
+            <label>Project Title</label>
+            <input type="text" name="title" id="editProjTitle" required>
+            
+            <label>Description</label>
+            <textarea name="description" id="editProjDesc" required></textarea>
+            
+            <label>Required Skills (comma separated)</label>
+            <input type="text" name="skills" id="editProjSkills" required>
+            
+            <button type="submit" class="primary-btn" style="width:100%;height:46px;margin-top:14px;">
+                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+            </button>
+        </form>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
 <script src="../js/auth.js"></script>
 <script>
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
-    : "https://skill-hub-backend-4w35.onrender.com";
+let currentProject = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!token) return window.location.href = 'login.html';
-
-    const adminLink = document.getElementById("adminNavLink");
-    if (adminLink && (user.role === "admin" || user.isAdmin)) {
-        adminLink.style.display = "flex";
-    }
+    if (!requireAuth()) return;
 
     const urlParams = new URLSearchParams(window.location.search);
     const projectId = urlParams.get('id');
-    if (projectId) loadProject(projectId);
+    if (projectId) {
+        loadProject(projectId);
+    } else {
+        showToast('No project ID specified.', 'error');
+        setTimeout(() => window.location.href = 'projects.html', 1500);
+    }
 });
 
-function logout() { localStorage.clear(); window.location.href = '../index.html'; }
-
 async function loadProject(projectId) {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/projects/${projectId}`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const project = await res.json();
-        
-        document.getElementById('projectTitle').textContent = project.title;
-        document.getElementById('projectTitleDetail').textContent = project.title;
-        document.getElementById('projectDescription').textContent = project.description;
-        document.getElementById('projectOwner').textContent = project.owner?.name || 'Unknown';
-        document.getElementById('projectMembers').textContent = `${(project.members?.length || 1)} member(s)`;
-        document.getElementById('projectCreated').textContent = new Date(project.createdAt).toLocaleDateString();
-        document.getElementById('projectStatus').textContent = project.status || 'active';
-        
-        const skillsContainer = document.getElementById('projectSkills');
-        (project.skills || []).forEach(s => {
-            const span = document.createElement('span');
-            span.textContent = s;
-            skillsContainer.appendChild(span);
-        });
+    const user = getAuthUser();
+    const currentUserId = user.id || user._id;
 
-        const isOwner = project.owner?._id === user._id;
-        const isMember = project.members?.some(m => m._id === user._id);
-        const actionsContainer = document.getElementById('projectActions');
-        
-        if (isOwner) {
-            actionsContainer.innerHTML = `
-                <button class="primary-btn" onclick="editProject('${project._id}')"><i class="fa-solid fa-edit"></i> Edit</button>
-                <button class="outline-btn" onclick="deleteProject('${project._id}')" style="color:var(--c-error);border-color:var(--c-error);"><i class="fa-solid fa-trash"></i> Delete</button>
-            `;
-        } else if (isMember) {
-            actionsContainer.innerHTML = `<button class="outline-btn" onclick="leaveProject('${project._id}')" style="color:var(--c-warning);border-color:var(--c-warning);"><i class="fa-solid fa-door-open"></i> Leave Project</button>`;
-        } else {
-            actionsContainer.innerHTML = `<button class="primary-btn" onclick="requestJoin('${project._id}')"><i class="fa-solid fa-paper-plane"></i> Request to Join</button>`;
+    try {
+        const res = await authFetch(`/api/projects/${projectId}`);
+        if (!res || !res.ok) {
+            document.getElementById('projectTitle').textContent = 'Project Not Found';
+            showToast('Could not load project details.', 'error');
+            return;
         }
 
-        loadTeamMembers(project);
-        loadJoinRequests(project);
+        const project = await res.json();
+        currentProject = project;
+
+        document.getElementById('projectTitle').textContent = project.title;
+        document.getElementById('projectTitleDetail').textContent = project.title;
+        document.getElementById('projectDescription').textContent = project.description || 'No description provided.';
+        document.getElementById('projectOwner').textContent = project.owner?.name || 'Unknown';
+        document.getElementById('projectMembersCount').textContent = `${(project.members?.length || 1)} member(s)`;
+        document.getElementById('projectCreated').textContent = new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        const skillsContainer = document.getElementById('projectSkills');
+        skillsContainer.innerHTML = (project.skills || []).map(s => `<span>${s}</span>`).join('');
+
+        const isOwner = (project.owner?._id || project.owner?.id || project.owner) === currentUserId;
+        const isMember = (project.members || []).some(m => (m._id || m.id || m) === currentUserId);
+        const actionsContainer = document.getElementById('projectActions');
+
+        if (isOwner || user.role === 'admin') {
+            actionsContainer.innerHTML = `
+                <button class="primary-btn" onclick="openEditProject()"><i class="fa-solid fa-pen-to-square"></i> Edit Project</button>
+                <button class="btn-delete" onclick="deleteProject('${project._id}')"><i class="fa-solid fa-trash"></i> Delete Project</button>
+            `;
+            document.getElementById('joinRequestsSection').style.display = 'block';
+            loadProjectJoinRequests(project._id);
+        } else if (isMember) {
+            actionsContainer.innerHTML = `
+                <button class="outline-btn" onclick="leaveProject('${project._id}')" style="color:var(--c-warning);border-color:var(--c-warning);"><i class="fa-solid fa-door-open"></i> Leave Project</button>
+            `;
+            document.getElementById('joinRequestsSection').style.display = 'none';
+        } else {
+            actionsContainer.innerHTML = `
+                <button class="primary-btn" onclick="requestJoin('${project._id}')"><i class="fa-solid fa-paper-plane"></i> Request to Join</button>
+            `;
+            document.getElementById('joinRequestsSection').style.display = 'none';
+        }
+
+        renderTeamMembers(project);
     } catch (err) {
         console.error('Load project error:', err);
     }
 }
 
-async function loadTeamMembers(project) {
-    const token = localStorage.getItem('token');
+function renderTeamMembers(project) {
     const members = project.members || [];
-    const allMembers = [project.owner, ...members].filter(Boolean);
-    
-    document.getElementById('teamMembers').innerHTML = allMembers.map(m => `
-        <div class="person" style="padding:15px;text-align:left;">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div class="avatar" style="width:40px;height:40px;font-size:14px;">${m.name?.charAt(0) || 'U'}</div>
-                <div>
-                    <h3 style="color:#001D39;font-size:14px;">${m.name}</h3>
-                    <p style="color:#2F4156;font-size:12px;">${m._id === project.owner?._id ? 'Owner' : 'Member'}</p>
-                </div>
-            </div>
-        </div>
-    `).join('');
-}
+    const container = document.getElementById('teamMembers');
 
-async function loadJoinRequests(project) {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    
-    if (project.owner?._id !== user._id) {
-        document.getElementById('joinRequests').innerHTML = '<p class="section-text">Only the project owner can view join requests.</p>';
+    if (!members.length) {
+        container.innerHTML = '<p class="section-text" style="color:var(--c-text-secondary);">No members found.</p>';
         return;
     }
 
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/projects/${project._id}/requests`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const requests = await res.json();
-        
-        if (!requests.length) {
-            document.getElementById('joinRequests').innerHTML = '<p class="section-text">No pending requests.</p>';
-            return;
-        }
+    container.innerHTML = members.map(m => {
+        const isOwner = (m._id || m.id) === (project.owner?._id || project.owner?.id);
+        const avatarHtml = m.profileImage
+            ? `<img src="${m.profileImage.startsWith('http') ? m.profileImage : API_BASE_URL + m.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+            : (m.name || 'U').charAt(0).toUpperCase();
 
-        document.getElementById('joinRequests').innerHTML = requests.map(r => `
-            <div class="notification-card" style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                    <div class="project-name">${r.requester?.name || 'Unknown'}</div>
-                    <div class="requester-name">${r.requester?.email || ''}</div>
-                    <div class="tags" style="margin-top:8px;">${(r.requester?.skills || []).map(s => `<span>${s}</span>`).join('')}</div>
-                </div>
-                <div class="notification-actions">
-                    <button class="accept-btn" onclick="handleJoinRequest('${r._id}', 'accepted', '${project._id}')"><i class="fa-solid fa-check"></i> Accept</button>
-                    <button class="reject-btn" onclick="handleJoinRequest('${r._id}', 'rejected', '${project._id}')"><i class="fa-solid fa-xmark"></i> Reject</button>
-                </div>
+        return `
+            <div class="person" style="padding:18px;text-align:center;cursor:pointer;" onclick="location.href='user-profile.html?id=${m._id || m.id}'">
+                <div class="avatar" style="width:50px;height:50px;margin:0 auto 10px;">${avatarHtml}</div>
+                <h3 style="font-size:15px;margin-bottom:2px;">${m.name}</h3>
+                <p style="font-size:12.5px;color:var(--c-text-secondary);">${isOwner ? '<strong style="color:var(--c-primary);"><i class="fa-solid fa-crown"></i> Owner</strong>' : (m.profession || 'Member')}</p>
             </div>
-        `).join('');
+        `;
+    }).join('');
+}
+
+async function loadProjectJoinRequests(projectId) {
+    try {
+        const res = await authFetch(`/api/projects/${projectId}/requests`);
+        const container = document.getElementById('joinRequests');
+
+        if (res && res.ok) {
+            const requests = await res.json();
+            if (!requests.length) {
+                container.innerHTML = '<p class="section-text" style="color:var(--c-text-secondary);">No pending join requests for this project.</p>';
+                return;
+            }
+
+            container.innerHTML = requests.map(r => `
+                <div class="notification-card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">
+                    <div>
+                        <div style="font-weight:700;color:var(--c-dark);font-size:15px;">${r.requester?.name || 'Unknown Developer'}</div>
+                        <div style="color:var(--c-text-secondary);font-size:13px;">${r.requester?.profession || r.requester?.email || ''}</div>
+                        <div class="tags" style="margin-top:6px;">${(r.requester?.skills || []).map(s => `<span>${s}</span>`).join('')}</div>
+                    </div>
+                    <div style="display:flex;gap:8px;">
+                        <button class="accept-btn" onclick="handleProjectJoinRequest('${r._id}', 'accepted')"><i class="fa-solid fa-check"></i> Accept</button>
+                        <button class="btn-delete" onclick="handleProjectJoinRequest('${r._id}', 'rejected')"><i class="fa-solid fa-xmark"></i> Decline</button>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p class="section-text" style="color:var(--c-text-secondary);">Could not load requests.</p>';
+        }
     } catch (err) {
-        console.error('Load join requests error:', err);
+        console.error('loadProjectJoinRequests error:', err);
     }
 }
 
-async function handleJoinRequest(requestId, action, projectId) {
-    const token = localStorage.getItem('token');
+async function handleProjectJoinRequest(requestId, action) {
     try {
-        await fetch(`${API_BASE_URL}/api/requests/${requestId}`, {
+        const res = await authFetch(`/api/requests/${requestId}`, {
             method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify({ status: action })
         });
-        loadProject(projectId);
-    } catch (err) { console.error('Handle request error:', err); }
+
+        if (res && res.ok) {
+            showToast(`Request ${action} successfully!`, 'success');
+            loadProject(currentProject._id);
+            updateSidebarBadges();
+        } else {
+            const err = res ? await res.json() : {};
+            showToast(err.message || 'Action failed', 'error');
+        }
+    } catch (err) {
+        showToast('Network error handling request', 'error');
+    }
 }
 
 async function requestJoin(projectId) {
-    const token = localStorage.getItem('token');
     try {
-        await fetch(`${API_BASE_URL}/api/projects/${projectId}/join`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-        alert('Join request sent!');
-        loadProject(projectId);
-    } catch (err) { alert('Failed to send request'); }
+        const res = await authFetch(`/api/projects/${projectId}/join`, { method: 'POST' });
+        if (res && res.ok) {
+            showToast('Join request sent to project owner!', 'success');
+            loadProject(projectId);
+            updateSidebarBadges();
+        } else {
+            const err = res ? await res.json() : {};
+            showToast(err.message || 'Could not send request', 'error');
+        }
+    } catch (err) {
+        showToast('Network error sending request', 'error');
+    }
 }
 
 async function leaveProject(projectId) {
-    if (!confirm('Leave this project?')) return;
-    const token = localStorage.getItem('token');
+    if (!confirm('Are you sure you want to leave this project team?')) return;
     try {
-        await fetch(`${API_BASE_URL}/api/projects/${projectId}/leave`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
-        window.location.href = 'projects.html';
-    } catch (err) { alert('Failed to leave project'); }
+        const res = await authFetch(`/api/projects/${projectId}/leave`, { method: 'POST' });
+        if (res && res.ok) {
+            showToast('You have left the project.', 'info');
+            setTimeout(() => window.location.href = 'projects.html', 800);
+        } else {
+            const err = res ? await res.json() : {};
+            showToast(err.message || 'Failed to leave project', 'error');
+        }
+    } catch (err) {
+        showToast('Network error', 'error');
+    }
 }
 
 async function deleteProject(projectId) {
-    if (!confirm('Delete this project permanently?')) return;
-    const token = localStorage.getItem('token');
+    if (!confirm('Are you sure you want to permanently delete this project? This cannot be undone.')) return;
     try {
-        await fetch(`${API_BASE_URL}/api/projects/${projectId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } });
-        window.location.href = 'projects.html';
-    } catch (err) { alert('Failed to delete project'); }
+        const res = await authFetch(`/api/projects/${projectId}`, { method: 'DELETE' });
+        if (res && res.ok) {
+            showToast('Project deleted successfully.', 'success');
+            setTimeout(() => window.location.href = 'projects.html', 800);
+        } else {
+            const err = res ? await res.json() : {};
+            showToast(err.message || 'Failed to delete project', 'error');
+        }
+    } catch (err) {
+        showToast('Network error deleting project', 'error');
+    }
 }
 
-function editProject(projectId) {
-    window.location.href = `edit-project.html?id=${projectId}`;
+function openEditProject() {
+    if (!currentProject) return;
+    document.getElementById('editProjTitle').value = currentProject.title || '';
+    document.getElementById('editProjDesc').value = currentProject.description || '';
+    document.getElementById('editProjSkills').value = (currentProject.skills || []).join(', ');
+    document.getElementById('editProjectModal').style.display = 'flex';
 }
+
+function closeEditProject() {
+    document.getElementById('editProjectModal').style.display = 'none';
+}
+
+document.getElementById('editProjectForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!currentProject) return;
+
+    const title = document.getElementById('editProjTitle').value.trim();
+    const description = document.getElementById('editProjDesc').value.trim();
+    const skills = document.getElementById('editProjSkills').value;
+
+    const btn = e.target.querySelector("button[type='submit']");
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    btn.disabled = true;
+
+    try {
+        const res = await authFetch(`/api/projects/${currentProject._id}`, {
+            method: 'PUT',
+            body: JSON.stringify({ title, description, skills })
+        });
+
+        if (res && res.ok) {
+            showToast('Project updated successfully!', 'success');
+            closeEditProject();
+            loadProject(currentProject._id);
+        } else {
+            const err = res ? await res.json() : {};
+            showToast(err.message || 'Failed to update project', 'error');
+        }
+    } catch (err) {
+        showToast('Network error saving project', 'error');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
+});
 </script>
 </body>
 </html>

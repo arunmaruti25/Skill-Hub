@@ -8,117 +8,26 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-        :root {
-            --c-white: #FFFFFF;
-            --c-bg-light: #EAF6FF;
-            --c-border: #C1E5FF;
-            --c-sky-mid: #9CD5FF;
-            --c-blue-primary: #6AB0E3;
-            --c-text-dark: #001D39;
-            --c-error: #ef4444;
-        }
-
-        .message-link {
-            display: flex !important;
-            align-items: center;
-        }
-
-        .sidebar-badge {
-            margin-left: auto;
-            min-width: 21px;
-            height: 21px;
-            padding: 0 6px;
-            border-radius: 50%;
-            background: var(--c-error);
-            color: white;
-            font-size: 12px;
-            font-weight: bold;
-            display: none;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* Fix header profile overlap */
-        .user-profile-header,
-        .header-profile,
-        .user-menu,
-        .profile-dropdown {
-            display: flex !important;
-            align-items: center !important;
-            gap: 10px !important;
-            position: relative !important;
-        }
-
-        .user-profile-header *,
-        .header-profile *,
-        .user-menu *,
-        .profile-dropdown * {
-            position: static !important;
-            transform: none !important;
-        }
-
-        .user-info,
-        .profile-info {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-        }
-
-        .nav-item {
+        .activity-item {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 8px 12px;
-            color: var(--c-text-dark);
-            text-decoration: none;
-            border-radius: 8px;
-            margin: 4px 0;
-            white-space: nowrap;
+            gap: 14px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--c-border);
         }
-
-        .nav-item.active {
-            background: rgba(156, 213, 255, 0.2);
-            color: var(--c-blue-primary);
+        .activity-item:last-child {
+            border-bottom: none;
         }
-
-        /* FORCE HEADER PROFILE UN-OVERLAP */
-        .user {
-            display: flex !important;
-            align-items: center !important;
-            gap: 12px !important;
-        }
-
-        .user>div,
-        .user .avatar {
-            width: 44px !important;
-            height: 44px !important;
-            min-width: 44px !important;
-            border-radius: 50% !important;
-        }
-
-        .user-info-text {
-            display: flex !important;
-            flex-direction: column !important;
-            align-items: flex-start !important;
-            border: none !important;
-            box-shadow: none !important;
-            width: auto !important;
-            height: auto !important;
-            border-radius: 0 !important;
-            background: transparent !important;
-        }
-
-        .user-info-text span,
-        .user-info-text small {
-            position: static !important;
-            transform: none !important;
-            width: auto !important;
-            height: auto !important;
-            border-radius: 0 !important;
-            background: transparent !important;
-            box-shadow: none !important;
-            border: none !important;
-            line-height: 1.2 !important;
+        .activity-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: #EAF2F7;
+            color: var(--c-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
         }
     </style>
 </head>
@@ -130,20 +39,14 @@
             <a href="dashboard.html" class="active"><i class="fa-solid fa-house"></i> Dashboard</a>
             <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
             <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
-            <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span
-                    id="requestBadge" class="sidebar-badge">0</span></a>
-            <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span
-                    id="notificationBadge" class="sidebar-badge">0</span></a>
-            <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span
-                    id="messageBadge" class="sidebar-badge">0</span></a>
-            <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
-                <i class="fa-solid fa-user-shield"></i>
-                <span>Admin Panel</span>
-            </a>
+            <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+            <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+            <a href="messages.html"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+            <a href="admin.html" id="adminNavLink" style="display:none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
         </nav>
         <div class="sidebar-bottom">
             <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
-            <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+            <a href="javascript:void(0)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
         </div>
     </aside>
 
@@ -151,58 +54,68 @@
         <div class="dashboard-header">
             <div>
                 <h1>Dashboard</h1>
-                <p>Welcome back! Here's what's happening with your projects.</p>
+                <p>Welcome back! Here's what's happening across your workspace.</p>
             </div>
-            <div class="user">
-                <div id="userAvatar" class="avatar">A</div>
-                <span class="user-info-text">
-                    <span id="userName" style="font-weight: 700; color: #001D39; display: block;">User</span>
-                    <small id="userRole" style="color: #6AB0E3; display: block; margin-top: 2px;">Member</small>
-                </span>
+            <div class="user" onclick="location.href='profile.html'" style="cursor:pointer;">
+                <div id="userAvatar" class="avatar">U</div>
+                <div style="display:flex;flex-direction:column;">
+                    <span id="userName" style="font-weight:700;color:var(--c-dark);">User</span>
+                    <small id="userRole" style="color:var(--c-primary);">Developer</small>
+                </div>
             </div>
         </div>
 
         <div class="dashboard-search">
             <i class="fa-solid fa-magnifying-glass"></i>
             <input type="text" id="searchInput" placeholder="Search projects, skills, teammates...">
-            <button onclick="filterDashboard()">Search</button>
+            <button onclick="handleDashboardSearch()">Search</button>
         </div>
 
         <div class="stats">
-            <div><i class="fa-solid fa-folder"></i><strong id="statProjects">0</strong><span>My Projects</span></div>
-            <div><i class="fa-solid fa-user-group"></i><strong id="statTeammates">0</strong><span>Teammates</span></div>
-            <div><i class="fa-solid fa-paper-plane"></i><strong id="statRequests">0</strong><span>Pending
-                    Requests</span></div>
+            <div onclick="location.href='projects.html'" style="cursor:pointer;">
+                <i class="fa-solid fa-folder"></i>
+                <strong id="statProjects">0</strong>
+                <span>My Projects</span>
+            </div>
+            <div onclick="location.href='teammates.html'" style="cursor:pointer;">
+                <i class="fa-solid fa-user-group"></i>
+                <strong id="statTeammates">0</strong>
+                <span>Available Teammates</span>
+            </div>
+            <div onclick="location.href='requests.html'" style="cursor:pointer;">
+                <i class="fa-solid fa-paper-plane"></i>
+                <strong id="statRequests">0</strong>
+                <span>Pending Requests</span>
+            </div>
         </div>
 
         <div class="dashboard-grid">
             <section class="dash-card">
                 <h2>Your Profile</h2>
                 <div class="profile-summary">
-                    <div class="avatar big-avatar" id="profileAvatar">JD</div>
-                    <h3 id="profileName">John Doe</h3>
-                    <p id="profileRole">Full Stack Developer</p>
+                    <div class="avatar big-avatar" id="profileAvatar">U</div>
+                    <h3 id="profileName">Loading...</h3>
+                    <p id="profileRole">Developer</p>
                 </div>
-                <div class="tags" id="profileSkills"></div>
-                <div class="card-title">
+                <div class="tags" id="profileSkills" style="justify-content:center;"></div>
+                
+                <div class="card-title" style="margin-top:20px;">
                     <h2>Quick Actions</h2>
                 </div>
                 <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <button class="primary-btn" onclick="showCreateProject()"><i class="fa-solid fa-plus"></i> New
-                        Project</button>
-                    <button class="outline-btn" onclick="location.href='teammates.html'"><i
-                            class="fa-solid fa-user-group"></i> Find Teammates</button>
-                    <button class="outline-btn" onclick="location.href='projects.html'"><i
-                            class="fa-solid fa-folder"></i> Browse Projects</button>
+                    <button class="primary-btn" onclick="showCreateProject()"><i class="fa-solid fa-plus"></i> New Project</button>
+                    <button class="outline-btn" onclick="location.href='teammates.html'"><i class="fa-solid fa-user-group"></i> Find Teammates</button>
+                    <button class="outline-btn" onclick="location.href='projects.html'"><i class="fa-solid fa-folder"></i> Browse Projects</button>
                 </div>
             </section>
 
             <section class="dash-card">
                 <div class="card-title">
                     <h2>Recent Projects</h2>
+                    <a href="projects.html" style="color:var(--c-primary);font-size:13px;font-weight:700;">View All &rarr;</a>
                 </div>
                 <div id="recentProjects">
-                    <p class="section-text">Loading projects...</p>
+                    <p class="section-text" style="color:var(--c-text-secondary);">Loading projects...</p>
                 </div>
             </section>
         </div>
@@ -210,132 +123,187 @@
         <section class="dash-card">
             <div class="card-title">
                 <h2>Recent Activity</h2>
+                <a href="notifications.html" style="color:var(--c-primary);font-size:13px;font-weight:700;">View All &rarr;</a>
             </div>
             <div id="recentActivity">
-                <p class="section-text">Loading activity...</p>
+                <p class="section-text" style="color:var(--c-text-secondary);">Loading activity...</p>
             </div>
         </section>
     </main>
 
-    <script src="../js/auth.js"></script>
-    <script>
-        const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-            ? "http://127.0.0.1:5000"
-            : "https://skill-hub-backend-4w35.onrender.com";
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-            const adminLink = document.getElementById("adminNavLink");
-            if (adminLink) {
-                adminLink.style.display = (user.role === "admin" || user.isAdmin) ? "flex" : "none";
-            }
-
-            // Populate top-right header and profile card with user data
-            const topUserName = user.name || 'User';
-            const topUserAvatar = (user.name || 'U').charAt(0).toUpperCase();
-            const topUserRole = user.role || 'Developer';
-
-            // Update top-right header
-            document.getElementById('userName').textContent = topUserName;
-            document.getElementById('userRole').textContent = topUserRole;
-            document.getElementById('userAvatar').textContent = topUserAvatar;
-            document.getElementById('profileAvatar').textContent = topUserAvatar;
-            document.getElementById('profileName').textContent = topUserName;
-            document.getElementById('profileRole').textContent = topUserRole;
-
-            loadDashboard();
-            document.getElementById('searchInput')?.addEventListener('input', (e) => filterDashboard(e.target.value));
-        });
-
-        async function loadDashboard() {
-            const token = localStorage.getItem('token');
-            if (!token) return window.location.href = 'login.html';
-
-            const user = JSON.parse(localStorage.getItem("user") || "{}");
-            const userId = user.id || user._id;
-
-            try {
-                const [dashRes, projectsRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/dashboard/${userId}`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    }),
-                    fetch(`${API_BASE_URL}/api/projects`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    })
-                ]);
-
-                // Fallback parsing just in case /api/dashboard isn't returning correctly
-                let dashData = {};
-                if (dashRes.ok) dashData = await dashRes.json();
-
-                let projects = [];
-                if (projectsRes.ok) projects = await projectsRes.json();
-
-                document.getElementById('statProjects').textContent = dashData.myProjectsCount || projects.filter(p => p.owner?._id === userId).length || 0;
-                document.getElementById('statTeammates').textContent = dashData.teammatesCount || 0;
-                document.getElementById('statRequests').textContent = dashData.pendingRequestsCount || 0;
-
-                const recentContainer = document.getElementById('recentProjects');
-                if (projects.length) {
-                    recentContainer.innerHTML = projects.slice(0, 3).map(p => `
-                <div class="project">
-                    <div class="project-icon"><i class="fa-solid fa-code"></i></div>
-                    <div>
-                        <h3>${p.title}</h3>
-                        <p>${p.description?.substring(0, 80)}...</p>
-                    </div>
-                    <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
-                </div>
-            `).join('');
-                } else {
-                    recentContainer.innerHTML = '<p class="section-text">No projects yet. <a href="#" onclick="showCreateProject()">Create one</a></p>';
-                }
-
-            } catch (err) {
-                console.error('Dashboard load error:', err);
-                document.getElementById('recentProjects').innerHTML = '<p class="section-text">Failed to load projects.</p>';
-            }
-        }
-    </script>
-
-    <div id="createProjectModal" class="modal"
-        style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,29,57,0.5);z-index:1000;align-items:center;justify-content:center;">
-        <div class="auth-box" style="width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+    <!-- Create Project Modal -->
+    <div id="createProjectModal" class="modal">
+        <div class="auth-box">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h2>Create Project</h2>
-                <button class="outline-btn" onclick="closeCreateProject()" style="padding:8px;"><i
-                        class="fa-solid fa-xmark"></i></button>
+                <h2 style="margin:0;font-size:22px;color:var(--c-dark);">Create New Project</h2>
+                <button type="button" class="outline-btn" onclick="closeCreateProject()" style="padding:6px 12px;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="createProjectForm">
                 <label>Project Title</label>
-                <input type="text" name="title" placeholder="My Awesome Project" required>
+                <input type="text" name="title" id="projTitle" placeholder="e.g. AI-Powered Code Reviewer" required>
+                
                 <label>Description</label>
-                <textarea name="description" placeholder="Describe your project..." required></textarea>
+                <textarea name="description" id="projDesc" placeholder="Describe project goals, features, and stack..." required></textarea>
+                
                 <label>Required Skills (comma separated)</label>
-                <input type="text" name="skills" placeholder="React, Node.js, MongoDB" required>
-                <button type="submit" class="primary-btn" style="width:100%;margin-top:10px;"><i
-                        class="fa-solid fa-plus"></i> Create Project</button>
+                <input type="text" name="skills" id="projSkills" placeholder="React, Node.js, Python, MongoDB" required>
+                
+                <button type="submit" class="primary-btn" style="width:100%;height:46px;margin-top:14px;">
+                    <i class="fa-solid fa-plus"></i> Create Project
+                </button>
             </form>
         </div>
     </div>
+
+    <div id="toast-container"></div>
+
+    <script src="../js/auth.js"></script>
     <script>
-        document.getElementById('createProjectForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const token = localStorage.getItem('token');
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
-            data.skills = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-            data.owner = JSON.parse(localStorage.getItem('user'))._id || JSON.parse(localStorage.getItem('user')).id;
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!requireAuth()) return;
+
+            const user = getAuthUser();
+            const displayName = user.name || "User";
+            const initial = displayName.charAt(0).toUpperCase();
+
+            // Populate user header
+            document.getElementById("userName").textContent = displayName;
+            document.getElementById("userRole").textContent = user.profession || user.role || "Developer";
+            
+            const userAvatar = document.getElementById("userAvatar");
+            const profileAvatar = document.getElementById("profileAvatar");
+
+            if (user.profileImage) {
+                const imgTag = `<img src="${user.profileImage.startsWith('http') ? user.profileImage : API_BASE_URL + user.profileImage}" alt="${displayName}">`;
+                userAvatar.innerHTML = imgTag;
+                profileAvatar.innerHTML = imgTag;
+            } else {
+                userAvatar.textContent = initial;
+                profileAvatar.textContent = initial;
+            }
+
+            document.getElementById("profileName").textContent = displayName;
+            document.getElementById("profileRole").textContent = user.profession || user.role || "Developer";
+
+            const profileSkills = document.getElementById("profileSkills");
+            if (user.skills && user.skills.length) {
+                profileSkills.innerHTML = user.skills.slice(0, 6).map(s => `<span>${s}</span>`).join("");
+            } else {
+                profileSkills.innerHTML = `<span style="color:var(--c-text-secondary);font-size:12px;">No skills listed. <a href="profile.html" style="color:var(--c-primary);font-weight:700;">Add skills</a></span>`;
+            }
+
+            loadDashboardData();
+
+            document.getElementById("searchInput")?.addEventListener("keydown", (e) => {
+                if (e.key === "Enter") handleDashboardSearch();
+            });
+        });
+
+        function showCreateProject() {
+            const modal = document.getElementById("createProjectModal");
+            if (modal) modal.style.display = "flex";
+        }
+
+        function closeCreateProject() {
+            const modal = document.getElementById("createProjectModal");
+            if (modal) modal.style.display = "none";
+        }
+
+        function handleDashboardSearch() {
+            const query = document.getElementById("searchInput").value.trim();
+            if (!query) return;
+            window.location.href = `projects.html?search=${encodeURIComponent(query)}`;
+        }
+
+        async function loadDashboardData() {
+            const user = getAuthUser();
+            const userId = user.id || user._id;
 
             try {
-                const res = await fetch(`${API_BASE_URL}/api/projects`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                    body: JSON.stringify(data)
+                const [dashRes, notifsRes] = await Promise.all([
+                    authFetch(`/api/dashboard/${userId}`),
+                    authFetch(`/api/notifications`)
+                ]);
+
+                if (dashRes && dashRes.ok) {
+                    const dashData = await dashRes.json();
+                    document.getElementById("statProjects").textContent = dashData.myProjectsCount || 0;
+                    document.getElementById("statTeammates").textContent = dashData.teammatesCount || 0;
+                    document.getElementById("statRequests").textContent = dashData.pendingRequestsCount || 0;
+
+                    const recentContainer = document.getElementById("recentProjects");
+                    if (dashData.featuredProjects && dashData.featuredProjects.length) {
+                        recentContainer.innerHTML = dashData.featuredProjects.map(p => `
+                            <div class="project">
+                                <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+                                <div>
+                                    <h3>${p.title}</h3>
+                                    <p>${p.description ? p.description.substring(0, 75) + '...' : ''}</p>
+                                    <div class="tags" style="margin:4px 0 0;">${(p.skills || []).slice(0, 3).map(s => `<span>${s}</span>`).join('')}</div>
+                                </div>
+                                <a href="project-details.html?id=${p._id}" class="view-btn">View</a>
+                            </div>
+                        `).join("");
+                    } else {
+                        recentContainer.innerHTML = '<p class="section-text" style="color:var(--c-text-secondary);">No projects yet. <a href="javascript:void(0)" onclick="showCreateProject()" style="color:var(--c-primary);font-weight:700;">Create one</a></p>';
+                    }
+                }
+
+                if (notifsRes && notifsRes.ok) {
+                    const notifs = await notifsRes.json();
+                    const activityContainer = document.getElementById("recentActivity");
+                    if (Array.isArray(notifs) && notifs.length) {
+                        activityContainer.innerHTML = notifs.slice(0, 4).map(n => `
+                            <div class="activity-item">
+                                <div class="activity-icon"><i class="fa-solid fa-bell"></i></div>
+                                <div style="flex:1;">
+                                    <p style="font-size:13.5px;color:var(--c-dark);margin:0;">${n.message}</p>
+                                    <small style="color:var(--c-text-secondary);font-size:11.5px;">${new Date(n.createdAt).toLocaleString()}</small>
+                                </div>
+                            </div>
+                        `).join("");
+                    } else {
+                        activityContainer.innerHTML = '<p class="section-text" style="color:var(--c-text-secondary);">No recent activity to show.</p>';
+                    }
+                }
+            } catch (err) {
+                console.error("loadDashboardData error:", err);
+            }
+        }
+
+        document.getElementById("createProjectForm")?.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const title = document.getElementById("projTitle").value.trim();
+            const description = document.getElementById("projDesc").value.trim();
+            const skills = document.getElementById("projSkills").value;
+
+            const btn = e.target.querySelector("button[type='submit']");
+            const orig = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+            btn.disabled = true;
+
+            try {
+                const res = await authFetch("/api/projects", {
+                    method: "POST",
+                    body: JSON.stringify({ title, description, skills })
                 });
-                if (res.ok) { closeCreateProject(); loadDashboard(); }
-                else alert('Failed to create project');
-            } catch (err) { alert('Network error'); }
+
+                if (res && res.ok) {
+                    showToast("Project created successfully!", "success");
+                    closeCreateProject();
+                    document.getElementById("createProjectForm").reset();
+                    loadDashboardData();
+                    updateSidebarBadges();
+                } else {
+                    const err = res ? await res.json() : {};
+                    showToast(err.message || "Failed to create project", "error");
+                }
+            } catch (err) {
+                showToast("Network error creating project", "error");
+            } finally {
+                btn.innerHTML = orig;
+                btn.disabled = false;
+            }
         });
     </script>
 </body>

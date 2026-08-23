@@ -14,175 +14,232 @@
         <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
         <a href="projects.html" class="active"><i class="fa-solid fa-folder"></i> Projects</a>
-        <a href="requests.html" class="message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
-        <a href="notifications.html" class="message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
-        <a href="messages.html" class="message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
-        <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
-            <i class="fa-solid fa-user-shield"></i>
-            <span>Admin Panel</span>
-        </a>
+        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+        <a href="admin.html" id="adminNavLink" style="display:none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
     </nav>
     <div class="sidebar-bottom">
         <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
-        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <a href="javascript:void(0)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </div>
 </aside>
 
 <main class="dashboard">
     <div class="page-head">
         <div>
-            <h1>Projects</h1>
-            <p>Discover projects and collaborate with others.</p>
+            <h1>Explore Projects</h1>
+            <p>Discover projects, find open roles, and build together.</p>
         </div>
         <button class="primary-btn" onclick="showCreateProject()"><i class="fa-solid fa-plus"></i> Create Project</button>
     </div>
 
+    <div class="dashboard-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="projectSearch" placeholder="Search projects by title, description or skill..." oninput="filterProjects()">
+    </div>
+
     <div class="filters">
-        <select id="skillFilter"><option value="">All Skills</option></select>
-        <select id="sortFilter">
+        <select id="skillFilter" onchange="filterProjects()">
+            <option value="">All Skills</option>
+        </select>
+        <select id="sortFilter" onchange="filterProjects()">
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
             <option value="popular">Most Members</option>
         </select>
     </div>
 
-    <div class="dashboard-search">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="projectSearch" placeholder="Search projects..." oninput="filterProjects()">
-    </div>
-
-    <div id="projectsGrid" class="people" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
-        <p class="section-text" style="grid-column:1/-1;text-align:center;">Loading projects...</p>
+    <div id="projectsGrid" class="people">
+        <p class="section-text" style="grid-column:1/-1;text-align:center;color:var(--c-text-secondary);">Loading projects...</p>
     </div>
 </main>
 
-<div id="createProjectModal" class="modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,29,57,0.5);z-index:1000;align-items:center;justify-content:center;">
-    <div class="auth-box" style="width:100%;max-width:500px;max-height:90vh;overflow-y:auto;">
+<!-- Create Project Modal -->
+<div id="createProjectModal" class="modal">
+    <div class="auth-box">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-            <h2>Create Project</h2>
-            <button class="outline-btn" onclick="closeCreateProject()" style="padding:8px;"><i class="fa-solid fa-xmark"></i></button>
+            <h2 style="margin:0;font-size:22px;color:var(--c-dark);">Create New Project</h2>
+            <button type="button" class="outline-btn" onclick="closeCreateProject()" style="padding:6px 12px;"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <form id="createProjectForm">
             <label>Project Title</label>
-            <input type="text" name="title" placeholder="My Awesome Project" required>
+            <input type="text" name="title" id="createTitle" placeholder="e.g. AI-Powered Code Reviewer" required>
+            
             <label>Description</label>
-            <textarea name="description" placeholder="Describe your project..." required></textarea>
+            <textarea name="description" id="createDesc" placeholder="Describe your project goals, features, and stack..." required></textarea>
+            
             <label>Required Skills (comma separated)</label>
-            <input type="text" name="skills" placeholder="React, Node.js, MongoDB" required>
-            <button type="submit" class="primary-btn" style="width:100%;margin-top:10px;"><i class="fa-solid fa-plus"></i> Create Project</button>
+            <input type="text" name="skills" id="createSkills" placeholder="React, Node.js, Python, MongoDB" required>
+            
+            <button type="submit" class="primary-btn" style="width:100%;height:46px;margin-top:14px;">
+                <i class="fa-solid fa-plus"></i> Create Project
+            </button>
         </form>
     </div>
 </div>
 
+<div id="toast-container"></div>
+
 <script src="../js/auth.js"></script>
 <script>
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
-    : "https://skill-hub-backend-4w35.onrender.com";
+let allProjects = [];
 
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!token) return window.location.href = 'login.html';
-    
-    // Unhide Admin Panel link
-    const adminLink = document.getElementById("adminNavLink");
-    if (adminLink && (user.role === "admin" || user.isAdmin)) {
-        adminLink.style.display = "flex";
+    if (!requireAuth()) return;
+
+    // Check URL parameters for preset search/skill filter
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    const skillParam = urlParams.get('skill');
+
+    if (searchParam) {
+        document.getElementById('projectSearch').value = searchParam;
     }
-    
+
+    loadSkillFilter(skillParam);
     loadProjects();
-    loadSkillFilter();
 });
 
-function logout() { localStorage.clear(); window.location.href = '../index.html'; function showCreateProject() { document.getElementById('createProjectModal').style.display = 'flex'; } function closeCreateProject() { document.getElementById('createProjectModal').style.display = 'none'; }
+function showCreateProject() {
+    document.getElementById('createProjectModal').style.display = 'flex';
+}
+
+function closeCreateProject() {
+    document.getElementById('createProjectModal').style.display = 'none';
+}
+
+async function loadSkillFilter(preselectedSkill) {
+    try {
+        const res = await authFetch('/api/skills');
+        if (res && res.ok) {
+            const skills = await res.json();
+            const select = document.getElementById('skillFilter');
+            skills.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                if (preselectedSkill && s.toLowerCase() === preselectedSkill.toLowerCase()) {
+                    opt.selected = true;
+                }
+                select.appendChild(opt);
+            });
+            if (preselectedSkill) filterProjects();
+        }
+    } catch (err) {
+        console.error('Load skills error:', err);
+    }
+}
 
 async function loadProjects() {
-    const token = localStorage.getItem('token');
     try {
-        const res = await fetch(`${API_BASE_URL}/api/projects`, { 
-            headers: { 'Authorization': `Bearer ${token}` } 
-        });
-        const projects = await res.json();
-        renderProjects(projects);
+        const res = await authFetch('/api/projects');
+        if (res && res.ok) {
+            allProjects = await res.json();
+            filterProjects();
+        } else {
+            document.getElementById('projectsGrid').innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;color:var(--c-error);">Failed to load projects.</p>';
+        }
     } catch (err) {
         console.error('Load projects error:', err);
-        document.getElementById('projectsGrid').innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;">Failed to load projects.</p>';
+        document.getElementById('projectsGrid').innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;color:var(--c-error);">Network error loading projects.</p>';
     }
+}
+
+function filterProjects() {
+    const search = (document.getElementById('projectSearch')?.value || '').toLowerCase().trim();
+    const skill = (document.getElementById('skillFilter')?.value || '').toLowerCase().trim();
+    const sort = document.getElementById('sortFilter')?.value || 'newest';
+
+    let filtered = allProjects.filter(p => {
+        const titleMatch = (p.title || '').toLowerCase().includes(search);
+        const descMatch = (p.description || '').toLowerCase().includes(search);
+        const ownerMatch = (p.owner?.name || '').toLowerCase().includes(search);
+        const skillTagMatch = (p.skills || []).some(s => s.toLowerCase().includes(search));
+        const matchesSearch = !search || titleMatch || descMatch || ownerMatch || skillTagMatch;
+
+        const matchesSkill = !skill || (p.skills || []).some(s => s.toLowerCase() === skill);
+
+        return matchesSearch && matchesSkill;
+    });
+
+    if (sort === 'oldest') {
+        filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    } else if (sort === 'popular') {
+        filtered.sort((a, b) => (b.members?.length || 0) - (a.members?.length || 0));
+    } else {
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+
+    renderProjects(filtered);
 }
 
 function renderProjects(projects) {
     const container = document.getElementById('projectsGrid');
     if (!projects.length) {
-        container.innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;">No projects found.</p>';
+        container.innerHTML = '<p class="section-text" style="grid-column:1/-1;text-align:center;color:var(--c-text-secondary);padding:40px 0;">No projects matching your search criteria.</p>';
         return;
     }
+
     container.innerHTML = projects.map(p => `
-        <div class="person" style="text-align:left;padding:20px;">
-            <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
-                <div class="project-icon" style="width:48px;height:48px;min-width:48px;"><i class="fa-solid fa-code"></i></div>
-                <div style="flex:1;">
-                    <h3 style="color:#001D39;margin-bottom:4px;">${p.title}</h3>
-                    <p style="color:#2F4156;font-size:13px;">${p.description?.substring(0,100)}...</p>
+        <div class="person" style="text-align:left;padding:22px;">
+            <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:12px;">
+                <div class="project-icon"><i class="fa-solid fa-code"></i></div>
+                <div style="flex:1;min-width:0;">
+                    <h3 style="color:var(--c-dark);margin-bottom:4px;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.title}</h3>
+                    <p style="color:var(--c-text-secondary);font-size:13px;line-height:1.4;">${p.description ? p.description.substring(0, 90) + '...' : 'No description.'}</p>
                 </div>
             </div>
-            <div class="tags" style="margin-bottom:12px;">
+            
+            <div class="tags" style="margin-bottom:14px;">
                 ${(p.skills || []).map(s => `<span>${s}</span>`).join('')}
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="color:#2F4156;font-size:12px;"><i class="fa-solid fa-user"></i> ${p.owner?.name || 'Unknown'}</span>
-                <a href="project-details.html?id=${p._id}" class="primary-btn" style="padding:8px 16px;font-size:12px;">View Details</a>
+            
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:12px;border-top:1px solid var(--c-border);">
+                <div style="display:flex;align-items:center;gap:6px;color:var(--c-text-secondary);font-size:12.5px;">
+                    <i class="fa-solid fa-user"></i> <span>${p.owner?.name || 'Unknown'}</span>
+                    <span style="opacity:0.5;">&bull;</span>
+                    <i class="fa-solid fa-users"></i> <span>${p.members?.length || 1}</span>
+                </div>
+                <a href="project-details.html?id=${p._id}" class="primary-btn" style="padding:6px 14px;font-size:12.5px;">View Details</a>
             </div>
         </div>
     `).join('');
 }
 
-async function loadSkillFilter() {
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/skills`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const skills = await res.json();
-        const select = document.getElementById('skillFilter');
-        skills.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = s;
-            opt.textContent = s;
-            select.appendChild(opt);
-        });
-    } catch (err) { console.error('Load skills error:', err); }
-}
-
-function filterProjects() {
-    const search = document.getElementById('projectSearch').value.toLowerCase();
-    const skill = document.getElementById('skillFilter').value;
-    const sort = document.getElementById('sortFilter').value;
-    const cards = document.querySelectorAll('#projectsGrid .person');
-    
-    cards.forEach(card => {
-        const text = card.textContent.toLowerCase();
-        const matchesSearch = !search || text.includes(search);
-        const matchesSkill = !skill || text.includes(skill.toLowerCase());
-        card.style.display = (matchesSearch && matchesSkill) ? 'block' : 'none';
-    });
-}
-
 document.getElementById('createProjectForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const token = localStorage.getItem('token');
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
-    data.skills = data.skills.split(',').map(s => s.trim()).filter(Boolean);
-    data.owner = JSON.parse(localStorage.getItem('user'))._id;
+    const title = document.getElementById('createTitle').value.trim();
+    const description = document.getElementById('createDesc').value.trim();
+    const skills = document.getElementById('createSkills').value;
+
+    const btn = e.target.querySelector("button[type='submit']");
+    const orig = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Creating...';
+    btn.disabled = true;
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/projects`, {
+        const res = await authFetch('/api/projects', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ title, description, skills })
         });
-        if (res.ok) { closeCreateProject(); loadProjects(); }
-        else alert('Failed to create project');
-    } catch (err) { alert('Network error'); }
+
+        if (res && res.ok) {
+            showToast('Project created successfully!', 'success');
+            closeCreateProject();
+            document.getElementById('createProjectForm').reset();
+            loadProjects();
+            updateSidebarBadges();
+        } else {
+            const err = res ? await res.json() : {};
+            showToast(err.message || 'Failed to create project', 'error');
+        }
+    } catch (err) {
+        showToast('Network error. Please try again.', 'error');
+    } finally {
+        btn.innerHTML = orig;
+        btn.disabled = false;
+    }
 });
 </script>
 </body>

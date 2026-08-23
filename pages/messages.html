@@ -7,27 +7,62 @@
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
     <style>
-:root {
-        --c-white:       #FFFFFF;
-        --c-bg-light:    #EAF6FF;
-        --c-border:      #C1E5FF;
-        --c-sky-mid:     #9CD5FF;
-        --c-blue-primary:#6AB0E3;
-        --c-text-dark:   #001D39;
-        --c-error: #ef4444;
-    }
-    .conversation { display: flex; align-items: center; gap: 15px; padding: 18px; border-bottom: 1px solid var(--c-border); cursor: pointer; transition: var(--transition); }
-    .conversation:hover { background: rgba(106,176,227,0.05); }
-    .conversation-info { flex: 1; }
-    .conversation-info h3 { margin: 0 0 5px; color: #001D39; }
-    .conversation-info p { margin: 0; color: #2F4156; }
-    .conversation-time { font-size: 12px; color: #2F4156; }
-    .unread-count { min-width: 22px; height: 22px; border-radius: 50%; background: var(--c-blue-primary); color: var(--c-white); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; }
-    .empty-messages { text-align: center; padding: 50px 20px; color: #2F4156; }
-    .message-badge { display: none; margin-left: auto; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--c-error); color: white; font-size: 11px; align-items: center; justify-content: center; }
-    .sidebar-message-link { display: flex !important; align-items: center; }
-    .sidebar-badge { margin-left: auto; min-width: 21px; height: 21px; padding: 0 6px; border-radius: 50%; background: var(--c-error); color: white; font-size: 12px; font-weight: bold; display: none; align-items: center; justify-content: center; }
-</style>
+        .conversation-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--c-border);
+            cursor: pointer;
+            transition: var(--transition);
+            background: var(--c-white);
+        }
+        .conversation-item:last-child {
+            border-bottom: none;
+        }
+        .conversation-item:hover {
+            background: #FAFCFE;
+            transform: translateX(4px);
+        }
+        .conversation-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .conversation-info h3 {
+            margin: 0 0 4px;
+            color: var(--c-dark);
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .conversation-info p {
+            margin: 0;
+            color: var(--c-text-secondary);
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .conversation-time {
+            font-size: 11.5px;
+            color: var(--c-text-secondary);
+            margin-bottom: 4px;
+            text-align: right;
+        }
+        .unread-count-pill {
+            min-width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background: var(--c-primary);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 6px;
+            margin-left: auto;
+        }
+    </style>
 </head>
 <body>
 <aside class="sidebar">
@@ -36,17 +71,14 @@
         <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
         <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
         <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
-        <a href="requests.html" class="sidebar-message-link"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
-        <a href="notifications.html" class="sidebar-message-link"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
-        <a href="messages.html" class="active sidebar-message-link"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
-        <a href="admin.html" id="adminNavLink" class="nav-item" style="display:none;">
-            <i class="fa-solid fa-user-shield"></i>
-            <span>Admin Panel</span>
-        </a>
+        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
+        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
+        <a href="messages.html" class="active"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
+        <a href="admin.html" id="adminNavLink" style="display:none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
     </nav>
     <div class="sidebar-bottom">
         <a href="profile.html"><i class="fa-solid fa-user"></i> My Profile</a>
-        <a href="../index.html" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        <a href="javascript:void(0)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
     </div>
 </aside>
 
@@ -54,64 +86,81 @@
     <div class="page-head">
         <div>
             <h1>Messages</h1>
-            <p>Your conversations with teammates</p>
+            <p>Direct conversations with teammates and project collaborators.</p>
         </div>
+        <a href="teammates.html" class="primary-btn"><i class="fa-solid fa-comment-dots"></i> Start New Chat</a>
     </div>
 
-    <div class="dash-card" style="padding:0;">
+    <div class="dash-card" style="padding:0;overflow:hidden;">
         <div id="conversationsList">
-            <div class="empty-messages">
-                <i class="fa-solid fa-comments" style="font-size:48px;color:var(--c-border);margin-bottom:15px;"></i>
-                <h3>No conversations yet</h3>
-                <p>Start a conversation with a teammate from the <a href="teammates.html" style="color:var(--c-blue-primary);">Find Teammates</a> page.</p>
-            </div>
+            <p class="section-text" style="padding:30px 20px;color:var(--c-text-secondary);text-align:center;">Loading conversations...</p>
         </div>
     </div>
 </main>
 
+<div id="toast-container"></div>
+
 <script src="../js/auth.js"></script>
 <script>
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
-    : "https://skill-hub-backend-4w35.onrender.com";
-
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('token');
-    if (!token) return window.location.href = 'login.html';
+    if (!requireAuth()) return;
     loadConversations();
 });
 
-function logout() { localStorage.clear(); window.location.href = '../index.html'; }
-
-const user = JSON.parse(localStorage.getItem('user') || '{}');
-const adminLink = document.getElementById('adminNavLink');
-if (adminLink && (user.role === 'admin' || user.isAdmin)) {
-    adminLink.style.display = 'flex';
+async function loadConversations() {
+    const container = document.getElementById('conversationsList');
+    try {
+        const res = await authFetch('/api/messages/conversations');
+        if (res && res.ok) {
+            const conversations = await res.json();
+            renderConversations(conversations);
+            updateSidebarBadges();
+        } else {
+            container.innerHTML = '<p class="section-text" style="padding:30px 20px;color:var(--c-error);text-align:center;">Failed to load messages.</p>';
+        }
+    } catch (err) {
+        console.error('loadConversations error:', err);
+        container.innerHTML = '<p class="section-text" style="padding:30px 20px;color:var(--c-error);text-align:center;">Network error loading conversations.</p>';
+    }
 }
 
-async function loadConversations() {
-    const token = localStorage.getItem('token');
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/messages/conversations`, { headers: { 'Authorization': `Bearer ${token}` } });
-        const conversations = await res.json();
-        const container = document.getElementById('conversationsList');
-        
-        if (conversations.length === 0) return;
-        
-        container.innerHTML = conversations.map(c => `
-            <a href="chat.html?user=${c.otherUser._id}" class="conversation">
-                <div class="avatar" style="width:48px;height:48px;font-size:16px;">${c.otherUser.name?.charAt(0) || 'U'}</div>
-                <div class="conversation-info">
-                    <h3>${c.otherUser.name}</h3>
-                    <p>${c.lastMessage?.content || 'No messages yet'}</p>
-                </div>
-                <span class="conversation-time">${c.lastMessage ? new Date(c.lastMessage.createdAt).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : ''}</span>
-                ${c.unreadCount > 0 ? `<span class="unread-count">${c.unreadCount}</span>` : ''}
-            </a>
-        `).join('');
-    } catch (err) {
-        console.error('Load conversations error:', err);
+function renderConversations(conversations) {
+    const container = document.getElementById('conversationsList');
+    if (!conversations || !conversations.length) {
+        container.innerHTML = `
+            <div style="text-align:center;padding:60px 20px;">
+                <i class="fa-solid fa-comments" style="font-size:48px;color:var(--c-border);margin-bottom:14px;display:block;"></i>
+                <h3 style="color:var(--c-dark);margin-bottom:6px;">No conversations yet</h3>
+                <p style="color:var(--c-text-secondary);margin-bottom:20px;">Connect with peers on the Find Teammates page to start collaborating.</p>
+                <a href="teammates.html" class="primary-btn"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
+            </div>
+        `;
+        return;
     }
+
+    container.innerHTML = conversations.map(c => {
+        const other = c.otherUser || c.user || {};
+        const avatarHtml = other.profileImage
+            ? `<img src="${other.profileImage.startsWith('http') ? other.profileImage : API_BASE_URL + other.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+            : (other.name || 'U').charAt(0).toUpperCase();
+
+        const lastText = typeof c.lastMessage === 'object' ? c.lastMessage?.content : (c.lastMessage || c.lastMessageText || 'Chat started');
+        const timeText = c.lastMessageTime || c.lastMessage?.createdAt;
+
+        return `
+            <div class="conversation-item" onclick="location.href='chat.html?user=${other._id}'">
+                <div class="avatar" style="width:48px;height:48px;font-size:16px;">${avatarHtml}</div>
+                <div class="conversation-info">
+                    <h3>${other.name || 'User'}</h3>
+                    <p>${lastText}</p>
+                </div>
+                <div style="display:flex;flex-direction:column;align-items:flex-end;">
+                    ${timeText ? `<span class="conversation-time">${new Date(timeText).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>` : ''}
+                    ${c.unreadCount > 0 ? `<span class="unread-count-pill">${c.unreadCount}</span>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 </script>
 </body>

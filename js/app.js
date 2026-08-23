@@ -1,215 +1,174 @@
-// ================= CONFIGURATION =================
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
-    : "https://skill-hub-backend-4w35.onrender.com"; // Replace with your live backend URL on Render/Railway when deployed
+/**
+ * Skill Hub - Main Application Helpers & UI Logic (app.js)
+ */
 
-// ================= AUTH (REGISTER & LOGIN) =================
-const registerForm = document.getElementById("registerForm");
-if (registerForm) {
-    registerForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const password = document.getElementById("password").value;
-        const confirmPassword = document.getElementById("confirmPassword").value;
-
-        if (password.length < 6) return alert("Password must be at least 6 characters long!");
-        if (password !== confirmPassword) return alert("Passwords do not match!");
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/register`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email, password })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                alert("Account created successfully!");
-                window.location.href = "login.html";
-            } else {
-                alert(data.message || "Registration failed");
-            }
-        } catch (err) {
-            console.error("Login Fetch Error Details:", err);
-            alert("Network error: " + (err.message || "Please try again."));
-        }
-    });
-}
-
-const loginForm = document.getElementById("loginForm");
-if (loginForm) {
-    loginForm.addEventListener("submit", async function (e) {
-        e.preventDefault();
-        const email = document.getElementById("loginEmail").value.trim();
-        const password = document.getElementById("loginPassword").value;
-
-        try {
-            const res = await fetch(`${API_BASE_URL}/api/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            });
-            const data = await res.json();
-            if (res.ok) {
-                localStorage.setItem("loggedIn", "true");
-                localStorage.setItem("user", JSON.stringify(data.user));
-                window.location.href = "dashboard.html";
-            } else {
-                alert(data.message || "Login failed");
-            }
-        } catch (err) {
-            console.error("Login Fetch Error Details:", err);
-            alert("Network error: " + (err.message || "Please try again."));
-        }
-    });
-}
-
-function togglePassword(id, button) {
-    const input = document.getElementById(id);
+// ================= PASSWORD TOGGLE HELPER =================
+function togglePassword(inputId, button) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
     const icon = button.querySelector("i");
     const isPass = input.type === "password";
     input.type = isPass ? "text" : "password";
-    icon.classList.toggle("fa-eye", !isPass);
-    icon.classList.toggle("fa-eye-slash", isPass);
-}
-
-function logout() {
-    localStorage.removeItem("loggedIn");
-    localStorage.removeItem("user");
-    window.location.href = "../index.html";
-}
-
-// ================= PROFILE =================
-let profileSkills = [];
-
-async function loadProfile() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-    if (!user?.id) return;
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/` + user.id, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token ? `Bearer ${token}` : ""
-            }
-        });
-        const data = await res.json();
-        if (!res.ok) return alert(data.message || "Could not load profile");
-
-        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
-        const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-
-        setVal("profileNameInput", data.name || "");
-        setVal("professionInput", data.profession || "");
-        setVal("profileLocationInput", data.location || "");
-        setVal("profileBioInput", data.bio || "");
-        setVal("experienceInput", data.experience || "Beginner");
-        setVal("availabilityInput", data.availability || "Available");
-        setVal("githubInput", data.github || "");
-        setVal("linkedinInput", data.linkedin || "");
-
-        profileSkills = data.skills || [];
-        displaySkills();
-
-        setText("profileTitle", data.name || "User");
-        setText("profileProfession", data.profession || "");
-        setText("profileLocation", data.location || "");
-
-        const avatar = document.getElementById("profileAvatar");
-        const removeBtn = document.getElementById("removeImageBtn");
-        if (avatar) {
-            avatar.innerHTML = data.profileImage
-                ? `<img src="${API_BASE_URL}${data.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
-                : (data.name || "U").charAt(0).toUpperCase();
-        }
-        if (removeBtn) {
-            removeBtn.style.display = data.profileImage ? "inline-flex" : "none";
-        }
-    } catch {
-        alert("Cannot connect to the server.");
+    if (icon) {
+        icon.classList.toggle("fa-eye", !isPass);
+        icon.classList.toggle("fa-eye-slash", isPass);
     }
 }
 
-function displaySkills() {
-    const container = document.getElementById("profileSkills");
+// ================= PROFILE MANAGEMENT =================
+let profileSkillsList = [];
+
+function renderProfileSkills() {
+    const container = document.getElementById("profileSkills") || document.getElementById("skillsTags");
     if (!container) return;
     container.innerHTML = "";
-    profileSkills.forEach((skill, index) => {
+    profileSkillsList.forEach((skill, index) => {
         const tag = document.createElement("span");
-        tag.innerHTML = `${skill} <button onclick="removeSkill(${index})" style="border:none;background:none;cursor:pointer;">×</button>`;
+        tag.innerHTML = `${skill} <button type="button" onclick="removeProfileSkill(${index})" style="border:none;background:none;cursor:pointer;color:inherit;font-weight:bold;margin-left:4px;">&times;</button>`;
         container.appendChild(tag);
     });
 }
 
-const skillInput = document.getElementById("skillInput");
-if (skillInput) {
-    skillInput.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            const skill = skillInput.value.trim();
-            if (skill && !profileSkills.includes(skill)) {
-                profileSkills.push(skill);
-                skillInput.value = "";
-                displaySkills();
-            }
-        }
-    });
-}
-
-function removeSkill(index) {
-    profileSkills.splice(index, 1);
-    displaySkills();
-}
-
-async function saveProfile() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-    if (!user?.id) return alert("Please login again.");
-
-    const profileData = {
-        name: document.getElementById("profileNameInput")?.value.trim() || "",
-        profession: document.getElementById("professionInput")?.value.trim() || "",
-        location: document.getElementById("profileLocationInput")?.value.trim() || "",
-        bio: document.getElementById("profileBioInput")?.value.trim() || "",
-        skills: profileSkills,
-        experience: document.getElementById("experienceInput")?.value || "Beginner",
-        availability: document.getElementById("availabilityInput")?.value || "Available",
-        github: document.getElementById("githubInput")?.value.trim() || "",
-        linkedin: document.getElementById("linkedinInput")?.value.trim() || ""
-    };
-
-    try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/` + user.id, {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": token ? `Bearer ${token}` : ""
-            },
-            body: JSON.stringify(profileData)
-        });
-        const data = await res.json();
-        if (res.ok) {
-            localStorage.setItem("user", JSON.stringify({ id: data.user._id, name: data.user.name, email: data.user.email }));
-            window.location.href = "dashboard.html";
-        } else {
-            alert(data.message || "Failed to save profile");
-        }
-    } catch {
-        alert("Cannot connect to the server.");
+function addProfileSkill(skill) {
+    const trimmed = (skill || "").trim();
+    if (trimmed && !profileSkillsList.includes(trimmed)) {
+        profileSkillsList.push(trimmed);
+        renderProfileSkills();
     }
 }
 
-if (document.getElementById("profileNameInput")) loadProfile();
+function removeProfileSkill(index) {
+    profileSkillsList.splice(index, 1);
+    renderProfileSkills();
+}
 
-const profileImageInput = document.getElementById("profileImageInput");
-if (profileImageInput) {
-    profileImageInput.addEventListener("change", async function () {
+async function loadFullProfile() {
+    const user = getAuthUser();
+    const userId = user.id || user._id;
+    if (!userId) return;
+
+    try {
+        const res = await authFetch(`/api/profile/${userId}`);
+        if (!res || !res.ok) {
+            console.error("Could not fetch profile from server");
+            return;
+        }
+
+        const data = await res.json();
+        setAuthSession(getAuthToken(), data);
+
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+        const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val || ""; };
+
+        setVal("profileNameInput", data.name);
+        setVal("editName", data.name);
+        setVal("professionInput", data.profession);
+        setVal("profileRole", data.profession || "Developer");
+        setVal("profileLocationInput", data.location);
+        setVal("profileBioInput", data.bio);
+        setVal("editBio", data.bio);
+        setVal("editEmail", data.email);
+        setVal("experienceInput", data.experience || "Beginner");
+        setVal("availabilityInput", data.availability || "Available");
+        setVal("githubInput", data.github);
+        setVal("linkedinInput", data.linkedin);
+
+        setText("profileTitle", data.name || "User");
+        setText("profileName", data.name || "User");
+        setText("profileProfession", data.profession || data.role || "Developer");
+        setText("profileRole", data.profession || data.role || "Developer");
+        setText("profileLocation", data.location || "");
+
+        const joinDateEl = document.getElementById("joinDate");
+        if (joinDateEl) {
+            joinDateEl.textContent = data.createdAt
+                ? new Date(data.createdAt).toLocaleDateString("en-US", { month: "long", year: "numeric" })
+                : "Recently";
+        }
+
+        profileSkillsList = Array.isArray(data.skills) ? [...data.skills] : [];
+        renderProfileSkills();
+
+        const avatar = document.getElementById("profileAvatar");
+        const removeBtn = document.getElementById("removeImageBtn");
+        if (avatar) {
+            if (data.profileImage) {
+                avatar.innerHTML = `<img src="${data.profileImage.startsWith('http') ? data.profileImage : API_BASE_URL + data.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+            } else {
+                avatar.textContent = (data.name || "U").charAt(0).toUpperCase();
+            }
+        }
+        if (removeBtn) {
+            removeBtn.style.display = data.profileImage ? "inline-flex" : "none";
+        }
+    } catch (err) {
+        console.error("loadFullProfile error:", err);
+    }
+}
+
+async function saveFullProfile() {
+    const user = getAuthUser();
+    const userId = user.id || user._id;
+    if (!userId) return showToast("Please log in again.", "error");
+
+    const getVal = (id) => document.getElementById(id)?.value?.trim() || "";
+
+    const name = getVal("profileNameInput") || getVal("editName") || user.name;
+    const profession = getVal("professionInput") || getVal("profileRole");
+    const location = getVal("profileLocationInput");
+    const bio = getVal("profileBioInput") || getVal("editBio");
+    const experience = document.getElementById("experienceInput")?.value || "Beginner";
+    const availability = document.getElementById("availabilityInput")?.value || "Available";
+    const github = getVal("githubInput");
+    const linkedin = getVal("linkedinInput");
+
+    const profileData = {
+        name,
+        profession,
+        location,
+        bio,
+        skills: profileSkillsList,
+        experience,
+        availability,
+        github,
+        linkedin
+    };
+
+    try {
+        const res = await authFetch(`/api/profile/${userId}`, {
+            method: "PUT",
+            body: JSON.stringify(profileData)
+        });
+
+        if (res && res.ok) {
+            const data = await res.json();
+            setAuthSession(getAuthToken(), data.user);
+            showToast("Profile saved successfully!", "success");
+            setTimeout(() => {
+                const isInsidePages = window.location.pathname.includes("/pages/");
+                window.location.href = isInsidePages ? "dashboard.html" : "pages/dashboard.html";
+            }, 600);
+        } else {
+            const errData = res ? await res.json() : {};
+            showToast(errData.message || "Failed to save profile.", "error");
+        }
+    } catch (err) {
+        showToast("Network error. Could not save profile.", "error");
+    }
+}
+
+// Image upload setup
+function initProfileImageHandlers() {
+    const imageInput = document.getElementById("profileImageInput");
+    if (!imageInput) return;
+
+    imageInput.addEventListener("change", async function () {
         const file = this.files[0];
-        const user = JSON.parse(localStorage.getItem("user"));
-        if (!file || !user?.id) return;
+        const user = getAuthUser();
+        const userId = user.id || user._id;
+        if (!file || !userId) return;
 
+        // Preview immediately
         const reader = new FileReader();
         reader.onload = () => {
             const avatar = document.getElementById("profileAvatar");
@@ -220,121 +179,70 @@ if (profileImageInput) {
         const formData = new FormData();
         formData.append("image", file);
 
-        const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE_URL}/api/profile/${user.id}/image`, {
-            method: "POST",
-            headers: token ? { "Authorization": `Bearer ${token}` } : {},
-            body: formData
-        });
-        const data = await res.json();
-        if (res.ok) {
-            const removeBtn = document.getElementById("removeImageBtn");
-            if (removeBtn) removeBtn.style.display = "inline-flex";
-        } else {
-            alert(data.message || "Image upload failed");
+        try {
+            const res = await authFetch(`/api/profile/${userId}/image`, {
+                method: "POST",
+                body: formData
+            });
+
+            if (res && res.ok) {
+                const data = await res.json();
+                setAuthSession(getAuthToken(), data.user);
+                showToast("Profile photo updated!", "success");
+                const removeBtn = document.getElementById("removeImageBtn");
+                if (removeBtn) removeBtn.style.display = "inline-flex";
+            } else {
+                const err = res ? await res.json() : {};
+                showToast(err.message || "Image upload failed.", "error");
+            }
+        } catch (err) {
+            showToast("Failed to upload image.", "error");
         }
     });
 }
 
 async function removeProfileImage() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-    if (!user?.id) return;
+    const user = getAuthUser();
+    const userId = user.id || user._id;
+    if (!userId) return;
     if (!confirm("Are you sure you want to remove your profile photo?")) return;
 
     try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/${user.id}/image`, {
-            method: "DELETE",
-            headers: token ? { "Authorization": `Bearer ${token}` } : {}
-        });
-        const data = await res.json();
-        if (res.ok) {
+        const res = await authFetch(`/api/profile/${userId}/image`, { method: "DELETE" });
+        if (res && res.ok) {
+            const data = await res.json();
+            setAuthSession(getAuthToken(), data.user);
             const avatar = document.getElementById("profileAvatar");
             if (avatar) avatar.textContent = (user.name || "U").charAt(0).toUpperCase();
             const removeBtn = document.getElementById("removeImageBtn");
             if (removeBtn) removeBtn.style.display = "none";
             const fileInput = document.getElementById("profileImageInput");
             if (fileInput) fileInput.value = "";
-            alert("Profile image removed successfully!");
+            showToast("Profile photo removed.", "success");
         } else {
-            alert(data.message || "Failed to remove image");
-        }
-    } catch {
-        alert("Cannot connect to the server.");
-    }
-}
-
-// ================= NOTIFICATIONS =================
-async function markAllRead() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-    if (user?.id) {
-        try {
-            await fetch(`${API_BASE_URL}/api/notifications/read-all/` + user.id, { method: "PUT", headers: token ? { "Authorization": `Bearer ${token}` } : {} });
-        } catch (err) {
-            console.error("Could not mark notifications as read:", err);
-        }
-    }
-
-    document.querySelectorAll(".notification.unread").forEach(n => n.classList.remove("unread"));
-    const button = document.getElementById("markReadBtn");
-    if (button) {
-        button.innerHTML = '<i class="fa-solid fa-check"></i> All Read';
-        button.disabled = true;
-    }
-    updateSidebarBadges();
-}
-
-// ================= GLOBAL SIDEBAR BADGES =================
-async function updateSidebarBadges() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    const token = localStorage.getItem("token");
-    if (!user?.id) return;
-
-    try {
-        const msgRes = await fetch(`${API_BASE_URL}/api/message-inbox/` + user.id, { headers: token ? { "Authorization": `Bearer ${token}` } : {} });
-        if (msgRes.ok) {
-            const conversations = await msgRes.json();
-            const unreadMessages = conversations.reduce((sum, c) => sum + Number(c.unreadCount || 0), 0);
-            document.querySelectorAll("#messageBadge, .message-badge, .sidebar-message-badge").forEach(badge => {
-                badge.textContent = unreadMessages;
-                badge.style.display = unreadMessages > 0 ? "flex" : "none";
-            });
+            showToast("Failed to remove photo.", "error");
         }
     } catch (err) {
-        console.error("Error updating message badge:", err);
-    }
-
-    try {
-        const notifRes = await fetch(`${API_BASE_URL}/api/notifications/` + user.id, { headers: token ? { "Authorization": `Bearer ${token}` } : {} });
-        if (notifRes.ok) {
-            const notifs = await notifRes.json();
-            const unreadNotifs = notifs.filter(n => !n.read).length;
-            document.querySelectorAll("#notificationBadge, .notification-badge, .sidebar-notification-badge").forEach(badge => {
-                badge.textContent = unreadNotifs;
-                badge.style.display = unreadNotifs > 0 ? "flex" : "none";
-            });
-        }
-    } catch (err) {
-        console.error("Error updating notification badge:", err);
+        showToast("Network error.", "error");
     }
 }
 
-function checkAdminAccess() {
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user?.role === "admin") {
-        const nav = document.querySelector(".sidebar nav");
-        if (nav && !document.getElementById("adminNavBtn")) {
-            const link = document.createElement("a");
-            link.id = "adminNavBtn";
-            link.href = "admin.html";
-            if (window.location.pathname.includes("admin.html")) link.className = "active";
-            link.innerHTML = '<i class="fa-solid fa-shield-halved" style="color:var(--c-sky);"></i> Admin Panel';
-            nav.appendChild(link);
-        }
+// Skill enter key event listener
+document.addEventListener("DOMContentLoaded", () => {
+    const skillInput = document.getElementById("skillInput");
+    if (skillInput) {
+        skillInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                addProfileSkill(this.value);
+                this.value = "";
+            }
+        });
     }
-}
 
-checkAdminAccess();
-updateSidebarBadges();
-setInterval(updateSidebarBadges, 5000);
+    initProfileImageHandlers();
+
+    if (document.getElementById("profileNameInput") || document.getElementById("editName")) {
+        loadFullProfile();
+    }
+});

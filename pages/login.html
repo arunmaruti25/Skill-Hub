@@ -6,66 +6,6 @@
     <title>Login - Skill Hub</title>
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-    <style>
-:root {
-        --c-white:       #FFFFFF;
-        --c-bg-light:    #EAF6FF;
-        --c-border:      #C1E5FF;
-        --c-sky-mid:     #9CD5FF;
-        --c-blue-primary:#6AB0E3;
-        --c-text-dark:   #001D39;
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: 'Plus Jakarta Sans', Arial, sans-serif; background: var(--c-bg-light); color: var(--c-text-dark); min-height: 100vh; }
-    .auth-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 30px 20px; position: relative; overflow: hidden; }
-    .auth-page::before, .auth-page::after { content: ""; position: absolute; border-radius: 50%; filter: blur(80px); }
-    .auth-page::before { width: 400px; height: 400px; background: rgba(156,213,255,.18); top: -150px; left: -100px; }
-    .auth-page::after { width: 350px; height: 350px; background: rgba(193,229,255,.12); bottom: -150px; right: -100px; }
-    .auth-box { width: 100%; max-width: 460px; padding: 38px; background: rgba(255,255,255,0.9); border: 1px solid var(--c-border); border-radius: 24px; position: relative; z-index: 2; box-shadow: 0 25px 60px rgba(0,29,57,0.15), 0 0 30px rgba(156,213,255,0.12); backdrop-filter: blur(15px); }
-    .auth-box .logo { display: flex; align-items: center; gap: 10px; color: var(--c-blue-primary); font-size: 24px; font-weight: 800; text-decoration: none; margin-bottom: 25px; }
-    .auth-box .logo i { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; background: var(--c-sky-mid); color: var(--c-text-dark); border-radius: 12px; font-size: 19px; box-shadow: 0 6px 18px rgba(156,213,255,.3); }
-    .auth-box h1 { margin: 0 0 8px; color: var(--c-blue-primary); font-size: 30px; }
-    .auth-box > p { margin: 0 0 28px; color: var(--c-border); font-size: 14px; }
-    #loginForm { display: flex; flex-direction: column; }
-    #loginForm label { margin-bottom: 7px; color: var(--c-blue-primary); font-size: 13px; font-weight: 600; }
-    #loginForm input { width: 100%; height: 48px; padding: 0 14px; margin-bottom: 18px; background: rgba(255,255,255,0.7); border: 1.5px solid var(--border); border-radius: 11px; outline: none; color: var(--c-text-dark); font-size: 14px; transition: .25s; }
-    #loginForm input::placeholder { color: rgba(193,229,255,.48); }
-    #loginForm input:focus { border-color: var(--c-sky-mid); background: rgba(255,255,255,0.9); box-shadow: 0 0 0 3px rgba(156,213,255,.08); }
-    #loginForm .primary-btn { width: 100%; height: 48px; margin-top: 5px; border: none; border-radius: 11px; background: var(--c-blue-primary); color: var(--c-white); font-size: 14px; font-weight: 700; cursor: pointer; transition: .25s; }
-    #loginForm .primary-btn:hover { background: var(--c-sky-mid); color: var(--c-text-dark); transform: translateY(-2px); box-shadow: 0 8px 25px rgba(156,213,255,.25); }
-    .auth-link { text-align: center; margin: 20px 0 0 !important; color: var(--c-border) !important; font-size: 13px !important; }
-.password-wrapper {
-    position: relative;
-    width: 100%;
-    margin-bottom: 18px;
-}
-.password-wrapper input {
-    width: 100%;
-    margin-bottom: 0 !important;
-    padding-right: 45px !important;
-}
-.toggle-password-btn {
-    position: absolute;
-    right: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent;
-    border: none;
-    color: var(--c-blue-primary, #6AB0E3);
-    font-size: 15px;
-    cursor: pointer;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: color 0.2s ease;
-}
-.toggle-password-btn:hover {
-    color: var(--c-text-dark, #001D39);
-}
-    .auth-link a { color: var(--c-sky-mid); font-weight: 700; text-decoration: none; }
-    .auth-link a:hover { color: var(--c-white); text-decoration: underline; }
-</style>
 </head>
 <body>
 <div class="auth-page">
@@ -73,69 +13,71 @@
         <a href="../index.html" class="logo"><i class="fa-solid fa-users"></i> Skill Hub</a>
         <h1>Welcome Back</h1>
         <p>Sign in to your account to continue</p>
+        
         <form id="loginForm">
             <label for="loginEmail">Email Address</label>
             <input type="email" id="loginEmail" name="email" placeholder="you@example.com" required autocomplete="email">
-            <label for="loginPassword">Password</label>
+            
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <label for="loginPassword">Password</label>
+                <a href="forgot-password.html" style="font-size:12px;color:var(--c-primary);font-weight:600;">Forgot?</a>
+            </div>
             <div class="password-wrapper">
                 <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required autocomplete="current-password">
                 <button type="button" class="toggle-password-btn" onclick="togglePassword('loginPassword', this)">
-                    <i class="fa-solid fa-eye-slash"></i>
+                    <i class="fa-solid fa-eye"></i>
                 </button>
             </div>
-            <button type="submit" class="primary-btn"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+            
+            <button type="submit" class="primary-btn" style="width:100%;height:46px;margin-top:4px;">
+                <i class="fa-solid fa-right-to-bracket"></i> Sign In
+            </button>
         </form>
+        
         <p class="auth-link">Don't have an account? <a href="register.html">Create one</a></p>
-        <p class="auth-link"><a href="forgot-password.html">Forgot password?</a></p>
     </div>
 </div>
+
+<div id="toast-container"></div>
+
+<script src="../js/auth.js"></script>
 <script>
-const API_BASE_URL = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://127.0.0.1:5000"
-    : "https://skill-hub-backend-4w35.onrender.com";
-
-document.addEventListener('DOMContentLoaded', () => {
-    function togglePassword(inputId, btn) {
-        const passwordInput = document.getElementById(inputId);
-        const type = passwordInput.type === 'password' ? 'text' : 'password';
-        passwordInput.type = type;
-        btn.innerHTML = type === 'password' ? '<i class="fa-solid fa-eye"></i>' : '<i class="fa-solid fa-eye-slash"></i>';
+document.addEventListener("DOMContentLoaded", () => {
+    if (getAuthToken() && getAuthUser()?.name) {
+        window.location.href = "dashboard.html";
+        return;
     }
-    const form = document.getElementById('loginForm');
-    const toggleBtn = document.querySelector('.toggle-password-btn');
 
-    toggleBtn?.addEventListener('click', () => {
-        togglePassword('loginPassword', toggleBtn);
-    });
-
-    form?.addEventListener('submit', async (e) => {
+    const form = document.getElementById("loginForm");
+    form?.addEventListener("submit", async (e) => {
         e.preventDefault();
-        const btn = form.querySelector('.primary-btn');
-        const originalText = btn.innerHTML;
+        const btn = form.querySelector("button[type='submit']");
+        const originalHtml = btn.innerHTML;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
         btn.disabled = true;
 
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData);
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
 
         try {
             const res = await fetch(`${API_BASE_URL}/api/login`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
             });
             const result = await res.json();
-            if (res.ok) {
-                localStorage.setItem('token', result.token);
-                localStorage.setItem('user', JSON.stringify(result.user));
-                window.location.href = 'dashboard.html';
+
+            if (res.ok && result.token) {
+                setAuthSession(result.token, result.user);
+                showToast("Welcome back!", "success");
+                setTimeout(() => window.location.href = "dashboard.html", 400);
             } else {
-                alert(result.message || 'Login failed');
+                showToast(result.message || "Invalid email or password", "error");
             }
         } catch (err) {
-            alert('Network error. Please try again.');
+            showToast("Network error. Please try again.", "error");
         } finally {
-            btn.innerHTML = originalText;
+            btn.innerHTML = originalHtml;
             btn.disabled = false;
         }
     });

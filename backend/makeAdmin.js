@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
 require("dotenv").config();
-const User = require("./models/User");
+const User = require("./models/user");
 
 const email = process.argv[2];
 
@@ -11,7 +10,9 @@ if (!email) {
     process.exit(1);
 }
 
-mongoose.connect(process.env.MONGO_URI)
+const MONGO_URI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/skillhub";
+
+mongoose.connect(MONGO_URI)
     .then(async () => {
         const user = await User.findOne({ email: email.toLowerCase().trim() });
         if (!user) {
