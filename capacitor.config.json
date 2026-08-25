@@ -1,0 +1,9 @@
+{
+  "appId": "com.skillhub.app",
+  "appName": "Skill Hub",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  }
+}
+

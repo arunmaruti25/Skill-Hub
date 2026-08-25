@@ -23,3 +23,12 @@ Thumbs.db
 # Uploads (ignore uploaded images but keep directory)
 backend/uploads/*
 !backend/uploads/.gitkeep
+
+# Capacitor build output & Android generated files
+www/
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/capacitor-cordova-android-plugins/
+

@@ -2,9 +2,36 @@
  * Skill Hub - Unified Authentication & API Client Library (auth.js)
  */
 
-const API_BASE_URL = (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")
+function isCapacitorNative() {
+    try {
+        if (typeof window !== "undefined" && window.Capacitor) {
+            if (typeof window.Capacitor.isNativePlatform === "function") {
+                return window.Capacitor.isNativePlatform();
+            }
+            if (typeof window.Capacitor.getPlatform === "function") {
+                return window.Capacitor.getPlatform() !== "web";
+            }
+            if (window.Capacitor.platform && window.Capacitor.platform !== "web") {
+                return true;
+            }
+        }
+    } catch {
+        // fallback
+    }
+    return false;
+}
+
+const isNativeApp = isCapacitorNative();
+const isLocalBrowser = !isNativeApp && (
+    window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname === "0.0.0.0"
+);
+
+const API_BASE_URL = isLocalBrowser
     ? "http://127.0.0.1:5000"
     : "https://skill-hub-backend-4w35.onrender.com";
+
 
 // ================= AUTH SESSION HELPERS =================
 function getAuthToken() {
