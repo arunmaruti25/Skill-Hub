@@ -1,6 +1,6 @@
 Add-Type -AssemblyName System.Drawing
 
-$srcPath = "C:\Users\Maruti Arun\.gemini\antigravity\brain\89052da5-eb57-4d1b-9950-8f26a783a5c9\.user_uploaded\media_1787662835323.jpg"
+$srcPath = "d:\SKILL HUB\assets\logo.png"
 $resDir = "d:\SKILL HUB\android\app\src\main\res"
 
 if (-not (Test-Path $srcPath)) {
@@ -77,7 +77,7 @@ $fgSizes = @{
 foreach ($folder in $fgSizes.Keys) {
     $size = $fgSizes[$folder]
     $fgPath = Join-Path $resDir "$folder\ic_launcher_foreground.png"
-    Resize-Image $srcImg $size $size $fgPath 0.85
+    Resize-Image $srcImg $size $size $fgPath 0.75
 }
 
 # 3. Splash Screens (splash.png) centered on sleek dark background #000000
