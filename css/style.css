@@ -153,10 +153,12 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .sidebar .logo i { font-size: 22px; color: var(--c-primary); }
-.brand-logo-img, .sidebar .logo img, .auth-box .logo img, .landing-logo img {
-    width: 36px;
-    height: 36px;
-    border-radius: 9px;
+.brand-logo-img, .sidebar .logo img, .auth-box .logo img, .landing-logo img, .logo img {
+    width: 34px !important;
+    height: 34px !important;
+    max-width: 34px !important;
+    max-height: 34px !important;
+    border-radius: 8px;
     object-fit: cover;
     display: inline-block;
     flex-shrink: 0;
