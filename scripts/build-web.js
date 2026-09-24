@@ -5,9 +5,9 @@ const { minify: minifyJs } = require('terser');
 const { minify: minifyHtml } = require('html-minifier-terser');
 
 const rootDir = path.resolve(__dirname, '..');
-const outDir = path.join(rootDir, 'www');
+const outDir = path.join(rootDir, 'build', 'web');
 
-// Clean or create www
+// Clean or create build/web
 if (fs.existsSync(outDir)) {
     fs.rmSync(outDir, { recursive: true, force: true });
 }
@@ -75,20 +75,20 @@ async function processDirectory(src, dest) {
     }
 }
 
-const itemsToProcess = [
+const frontendDir = path.join(rootDir, 'frontend');
+const publicDir = path.join(frontendDir, 'public');
+
+const frontendItems = [
     'index.html',
     'css',
     'js',
     'pages',
-    'assets',
-    'robots.txt',
-    'sitemap.xml',
-    'google579278a1a9ae3272.html'
+    'assets'
 ];
 
 async function main() {
-    for (const item of itemsToProcess) {
-        const srcPath = path.join(rootDir, item);
+    for (const item of frontendItems) {
+        const srcPath = path.join(frontendDir, item);
         const destPath = path.join(outDir, item);
         if (fs.existsSync(srcPath)) {
             const stats = fs.statSync(srcPath);
@@ -99,7 +99,21 @@ async function main() {
             }
         }
     }
-    console.log('[build-web] Web assets successfully compressed & minified to www/');
+
+    if (fs.existsSync(publicDir)) {
+        for (const child of fs.readdirSync(publicDir)) {
+            const srcPath = path.join(publicDir, child);
+            const destPath = path.join(outDir, child);
+            const stats = fs.statSync(srcPath);
+            if (stats.isDirectory()) {
+                await processDirectory(srcPath, destPath);
+            } else {
+                await processFile(srcPath, destPath);
+            }
+        }
+    }
+
+    console.log('[build-web] Web assets successfully compressed & minified to build/web/');
 }
 
 main().catch(err => {

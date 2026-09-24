@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "outputDirectory": "www",
+  "outputDirectory": "build/web",
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [

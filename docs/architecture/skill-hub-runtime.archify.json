@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Skill Hub — Runtime Architecture",
+    "locale": "en",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/arunmaruti25/Skill-Hub.git",
+      "provider": "github",
+      "revision": "9956c4ad957bd34eaa4adfdd44b385cf12192559"
+    },
+    "viewBox": [1320, 820],
+    "views": [
+      {
+        "id": "primary-runtime-path",
+        "label": "Primary runtime path",
+        "focus": ["users", "client", "web-hosting", "api", "mongodb"],
+        "note": "Browser or Capacitor clients load the static web build and call the Express API; application records persist in MongoDB."
+      },
+      {
+        "id": "authenticated-actions",
+        "label": "Authenticated actions",
+        "focus": ["client", "api", "identity", "projects", "messaging", "uploads", "mongodb"],
+        "note": "A bearer JWT reaches protected API routes; server-side checks enforce ownership, participation, and admin role rules."
+      },
+      {
+        "id": "admin-oversight",
+        "label": "Admin oversight",
+        "focus": ["client", "api", "identity", "admin", "mongodb"],
+        "note": "Admin API endpoints require a verified token and a database-backed admin role check."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "users",
+      "type": "external",
+      "label": "Skill Hub users",
+      "sublabel": "Developers + admins",
+      "pos": [40, 342],
+      "size": [150, 72],
+      "sources": [{ "path": "pages/admin.html", "line": 20, "label": "Admin UI" }]
+    },
+    {
+      "id": "client",
+      "type": "frontend",
+      "label": "Web / Android client",
+      "sublabel": "Static UI + Android shell",
+      "pos": [250, 342],
+      "size": [190, 72],
+      "sources": [
+        { "path": "js/auth.js", "line": 31, "end_line": 112, "label": "API client + session" },
+        { "path": "capacitor.config.json", "line": 1, "end_line": 8, "label": "Android shell" }
+      ]
+    },
+    {
+      "id": "web-hosting",
+      "type": "cloud",
+      "label": "Static web build",
+      "sublabel": "www/ build output; Vercel config",
+      "pos": [250, 142],
+      "size": [190, 70],
+      "sources": [
+        { "path": "scripts/build-web.js", "line": 8, "end_line": 14, "label": "Build output" },
+        { "path": "vercel.json", "line": 1, "end_line": 5, "label": "Hosting config" }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Skill Hub REST API",
+      "sublabel": "Node.js Express REST API",
+      "tag": "HTTP JSON",
+      "pos": [540, 342],
+      "size": [190, 72],
+      "sources": [
+        { "path": "backend/server.js", "line": 1, "end_line": 60, "label": "Express middleware" },
+        { "path": "js/auth.js", "line": 31, "end_line": 34, "label": "API endpoint" }
+      ]
+    },
+    {
+      "id": "identity",
+      "type": "security",
+      "label": "Authentication & authorization",
+      "sublabel": "JWT, bcrypt, ownership, admin role",
+      "pos": [540, 142],
+      "size": [210, 70],
+      "sources": [
+        { "path": "backend/server.js", "line": 20, "end_line": 86, "label": "JWT + guards" },
+        { "path": "backend/server.js", "line": 91, "end_line": 125, "label": "Credentials" }
+      ]
+    },
+    {
+      "id": "profiles",
+      "type": "backend",
+      "label": "Profiles & skill discovery",
+      "sublabel": "Profiles, skills, dashboard",
+      "pos": [820, 92],
+      "size": [190, 68],
+      "sources": [{ "path": "backend/server.js", "line": 158, "end_line": 268, "label": "Skills + profiles" }]
+    },
+    {
+      "id": "projects",
+      "type": "backend",
+      "label": "Projects & membership",
+      "sublabel": "Projects, requests, membership",
+      "pos": [820, 250],
+      "size": [200, 72],
+      "sources": [{ "path": "backend/server.js", "line": 270, "end_line": 529, "label": "Projects + requests" }]
+    },
+    {
+      "id": "messaging",
+      "type": "backend",
+      "label": "Messaging & notifications",
+      "sublabel": "Messages + notifications (polled)",
+      "pos": [820, 414],
+      "size": [200, 72],
+      "sources": [
+        { "path": "backend/server.js", "line": 531, "end_line": 651, "label": "Notifications + messages" },
+        { "path": "pages/chat.html", "line": 80, "end_line": 81, "label": "3.5s polling" }
+      ]
+    },
+    {
+      "id": "admin",
+      "type": "security",
+      "label": "Admin oversight",
+      "sublabel": "Stats, users, chat review",
+      "pos": [820, 588],
+      "size": [200, 72],
+      "sources": [{ "path": "backend/server.js", "line": 678, "end_line": 727, "label": "Admin routes" }]
+    },
+    {
+      "id": "mongodb",
+      "type": "database",
+      "label": "MongoDB",
+      "sublabel": "Application records via Mongoose",
+      "pos": [1080, 290],
+      "size": [210, 76],
+      "sources": [
+        { "path": "backend/server.js", "line": 733, "end_line": 739, "label": "Mongoose connection" },
+        { "path": "backend/models/user.js", "line": 1, "end_line": 19, "label": "User model" },
+        { "path": "backend/models/Project.js", "line": 1, "end_line": 10, "label": "Project model" }
+      ]
+    },
+    {
+      "id": "uploads",
+      "type": "database",
+      "label": "Backend upload storage",
+      "sublabel": "Avatar files served at /uploads",
+      "pos": [1080, 490],
+      "size": [210, 70],
+      "sources": [{ "path": "backend/server.js", "line": 23, "end_line": 50, "label": "Multer + static files" }]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "Client / server trust boundary — bearer tokens cross here",
+      "wraps": ["api", "identity", "profiles", "projects", "messaging", "admin", "mongodb", "uploads"],
+      "pad": 30
+    }
+  ],
+  "connections": [
+    { "id": "user-client", "from": "users", "to": "client", "label": "interact", "variant": "emphasis" },
+    { "id": "hosting-client", "from": "web-hosting", "to": "client", "label": "static web assets", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelAt": [345, 226] },
+    { "id": "client-api", "from": "client", "to": "api", "label": "REST JSON + Bearer JWT", "variant": "emphasis", "labelAt": [490, 428] },
+    { "id": "api-identity", "from": "api", "to": "identity", "label": "hash credentials; issue / verify JWT; role checks", "variant": "security", "fromSide": "top", "toSide": "bottom" },
+    { "id": "api-profiles", "from": "api", "to": "profiles" },
+    { "id": "api-projects", "from": "api", "to": "projects" },
+    { "id": "api-messaging", "from": "api", "to": "messaging" },
+    { "id": "api-admin", "from": "api", "to": "admin", "label": "admin-only", "variant": "security" },
+    { "id": "modules-db", "from": "profiles", "to": "mongodb" },
+    { "id": "projects-db", "from": "projects", "to": "mongodb" },
+    { "id": "messaging-db", "from": "messaging", "to": "mongodb" },
+    { "id": "admin-db", "from": "admin", "to": "mongodb", "variant": "security" }
+  ]
+}

@@ -25,6 +25,7 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 
 # Capacitor build output & Android generated files
+build/
 www/
 android/app/build/
 android/build/

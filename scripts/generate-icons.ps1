@@ -1,6 +1,6 @@
 Add-Type -AssemblyName System.Drawing
 
-$srcPath = "d:\SKILL HUB\assets\logo.png"
+$srcPath = Join-Path $PSScriptRoot "..\frontend\assets\logo.png"
 $resDir = "d:\SKILL HUB\android\app\src\main\res"
 
 if (-not (Test-Path $srcPath)) {

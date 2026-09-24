@@ -128,11 +128,11 @@ try {
 
 // TEST 6: Frontend HTML Inspection
 console.log("\n6. Testing Frontend HTML Files & Script Links...");
-const pagesDir = path.join(__dirname, '..', 'pages');
-const rootDir = path.join(__dirname, '..');
+const frontendDir = path.join(__dirname, '..', 'frontend');
+const pagesDir = path.join(frontendDir, 'pages');
 
 const htmlFiles = [
-    path.join(rootDir, 'index.html'),
+    path.join(frontendDir, 'index.html'),
     ...fs.readdirSync(pagesDir).filter(f => f.endsWith('.html')).map(f => path.join(pagesDir, f))
 ];
 
@@ -141,9 +141,9 @@ htmlFiles.forEach(file => {
     const content = fs.readFileSync(file, 'utf8');
     const hasBadAuthScript = content.includes('src="js/auth.js"') && file.includes('pages');
     assert(!hasBadAuthScript, `${filename}: uses correct relative path for scripts`);
-    assert(fs.existsSync(path.join(rootDir, 'js', 'auth.js')), `${filename}: js/auth.js exists`);
-    assert(fs.existsSync(path.join(rootDir, 'js', 'app.js')), `${filename}: js/app.js exists`);
-    assert(fs.existsSync(path.join(rootDir, 'css', 'style.css')), `${filename}: css/style.css exists`);
+    assert(fs.existsSync(path.join(frontendDir, 'js', 'auth.js')), `${filename}: js/auth.js exists`);
+    assert(fs.existsSync(path.join(frontendDir, 'js', 'app.js')), `${filename}: js/app.js exists`);
+    assert(fs.existsSync(path.join(frontendDir, 'css', 'style.css')), `${filename}: css/style.css exists`);
 });
 
 // TEST 7: Auth Flow Pages
@@ -164,7 +164,7 @@ assert(!registerPage.includes('resendVerification'), "register.html: resendVerif
 // TEST 8: CSS Variable Palette
 console.log("\n8. Testing CSS Variable Palette...");
 try {
-    const cssContent = fs.readFileSync(path.join(rootDir, 'css', 'style.css'), 'utf8');
+    const cssContent = fs.readFileSync(path.join(frontendDir, 'css', 'style.css'), 'utf8');
     const requiredColors = ['#2F4156', '#567C8D', '#C8D9E6', '#F5EFEB', '#FFFFFF'];
     requiredColors.forEach(color => {
         assert(cssContent.toUpperCase().includes(color.toUpperCase()), `CSS includes required palette color: ${color}`);
