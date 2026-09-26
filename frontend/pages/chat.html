@@ -98,10 +98,10 @@ async function loadPartnerProfile() {
             document.getElementById('partnerProfileLink').href = `user-profile.html?id=${partnerUserId}`;
 
             const avatar = document.getElementById('partnerAvatar');
-            if (partner.profileImage) {
-                avatar.innerHTML = `<img src="${partner.profileImage.startsWith('http') ? partner.profileImage : API_BASE_URL + partner.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-            } else {
-                avatar.textContent = (partner.name || 'U').charAt(0).toUpperCase();
+            if (avatar) {
+                avatar.innerHTML = partner.profileImage
+                    ? `<img src="${partner.profileImage.startsWith('http') ? partner.profileImage : API_BASE_URL + partner.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                    : (partner.name || 'U').charAt(0).toUpperCase();
             }
         }
     } catch (err) {

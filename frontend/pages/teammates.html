@@ -81,15 +81,7 @@ async function loadSkillFilter(preselectedSkill) {
         if (res && res.ok) {
             const skills = await res.json();
             const select = document.getElementById('skillFilterTeammates');
-            skills.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s;
-                opt.textContent = s;
-                if (preselectedSkill && s.toLowerCase() === preselectedSkill.toLowerCase()) {
-                    opt.selected = true;
-                }
-                select.appendChild(opt);
-            });
+            skills.forEach(s => select.add(new Option(s, s, false, preselectedSkill && s.toLowerCase() === preselectedSkill.toLowerCase())));
             if (preselectedSkill) filterTeammates();
         }
     } catch (err) {
@@ -155,7 +147,7 @@ function renderTeammates(teammates, currentUserId) {
                 <h3>${t.name} ${isSelf ? '<span style="font-size:11px;color:var(--c-primary);font-weight:700;">(You)</span>' : ''}</h3>
                 <p style="font-weight:600;color:var(--c-dark);">${t.profession || 'Developer'}</p>
                 <p style="font-size:12.5px;color:var(--c-text-secondary);min-height:36px;margin:6px 0;">${t.bio ? t.bio.substring(0, 70) + '...' : 'Building great things on Skill Hub.'}</p>
-                
+
                 <div class="tags" style="justify-content:center;margin:8px 0 16px;">
                     ${(t.skills || []).slice(0, 4).map(s => `<span>${s}</span>`).join('')}
                 </div>

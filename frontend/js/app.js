@@ -90,17 +90,13 @@ async function loadFullProfile() {
         renderProfileSkills();
 
         const avatar = document.getElementById("profileAvatar");
-        const removeBtn = document.getElementById("removeImageBtn");
         if (avatar) {
-            if (data.profileImage) {
-                avatar.innerHTML = `<img src="${data.profileImage.startsWith('http') ? data.profileImage : API_BASE_URL + data.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-            } else {
-                avatar.textContent = (data.name || "U").charAt(0).toUpperCase();
-            }
+            avatar.innerHTML = data.profileImage
+                ? `<img src="${data.profileImage.startsWith('http') ? data.profileImage : API_BASE_URL + data.profileImage}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+                : (data.name || "U").charAt(0).toUpperCase();
         }
-        if (removeBtn) {
-            removeBtn.style.display = data.profileImage ? "inline-flex" : "none";
-        }
+        const removeBtn = document.getElementById("removeImageBtn");
+        if (removeBtn) removeBtn.style.display = data.profileImage ? "inline-flex" : "none";
     } catch (err) {
         console.error("loadFullProfile error:", err);
     }
@@ -112,26 +108,16 @@ async function saveFullProfile() {
     if (!userId) return showToast("Please log in again.", "error");
 
     const getVal = (id) => document.getElementById(id)?.value?.trim() || "";
-
-    const name = getVal("profileNameInput") || getVal("editName") || user.name;
-    const profession = getVal("professionInput") || getVal("profileRole");
-    const location = getVal("profileLocationInput");
-    const bio = getVal("profileBioInput") || getVal("editBio");
-    const experience = document.getElementById("experienceInput")?.value || "Beginner";
-    const availability = document.getElementById("availabilityInput")?.value || "Available";
-    const github = getVal("githubInput");
-    const linkedin = getVal("linkedinInput");
-
     const profileData = {
-        name,
-        profession,
-        location,
-        bio,
+        name: getVal("profileNameInput") || getVal("editName") || user.name,
+        profession: getVal("professionInput") || getVal("profileRole"),
+        location: getVal("profileLocationInput"),
+        bio: getVal("profileBioInput") || getVal("editBio"),
         skills: profileSkillsList,
-        experience,
-        availability,
-        github,
-        linkedin
+        experience: document.getElementById("experienceInput")?.value || "Beginner",
+        availability: document.getElementById("availabilityInput")?.value || "Available",
+        github: getVal("githubInput"),
+        linkedin: getVal("linkedinInput")
     };
 
     try {

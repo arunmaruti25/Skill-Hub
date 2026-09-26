@@ -58,7 +58,7 @@
         <section class="dash-card">
             <h2>About</h2>
             <p id="userBio" style="color:var(--c-text-dark);font-size:14px;line-height:1.6;white-space:pre-wrap;">No bio provided yet.</p>
-            
+
             <div style="margin-top:20px;display:flex;gap:12px;flex-wrap:wrap;">
                 <div id="githubBadge" style="display:none;">
                     <a id="githubLink" href="#" target="_blank" class="outline-btn" style="padding:6px 12px;font-size:12.5px;">
@@ -79,7 +79,7 @@
                 <div style="font-size:12.5px;font-weight:700;color:var(--c-text-secondary);margin-bottom:6px;">SKILLS</div>
                 <div class="tags" id="userSkills"></div>
             </div>
-            
+
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px;padding-top:14px;border-top:1px solid var(--c-border);">
                 <div>
                     <div style="font-size:12px;font-weight:700;color:var(--c-text-secondary);">EXPERIENCE</div>
@@ -239,10 +239,10 @@ function openInviteModal(userId) {
     document.getElementById('inviteUserId').value = userId;
     const select = document.getElementById('inviteProjectSelect');
     select.innerHTML = '<option value="">Select a project</option>';
-    
+
     const currentUser = getAuthUser();
     const currentUserId = currentUser.id || currentUser._id;
-    
+
     authFetch(`/api/users/${currentUserId}/projects`)
         .then(res => res.json())
         .then(projects => {
@@ -271,20 +271,20 @@ function closeInviteModal() {
 async function submitInvite() {
     const userId = document.getElementById('inviteUserId').value;
     const projectId = document.getElementById('inviteProjectSelect').value;
-    
+
     if (!projectId) return showToast('Please select a project', 'warning');
-    
+
     const btn = document.getElementById('sendInviteBtn');
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
-    
+
     try {
         const res = await authFetch(`/api/projects/${projectId}/invite`, {
             method: 'POST',
             body: JSON.stringify({ invitee: userId })
         });
         const data = await res.json();
-        
+
         if (res.ok) {
             showToast('Invitation sent successfully!', 'success');
             closeInviteModal();

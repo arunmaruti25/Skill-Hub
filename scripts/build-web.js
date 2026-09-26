@@ -61,58 +61,31 @@ async function processFile(src, dest) {
     }
 }
 
-async function processDirectory(src, dest) {
-    if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-    for (const child of fs.readdirSync(src)) {
-        const srcChild = path.join(src, child);
-        const destChild = path.join(dest, child);
-        const stats = fs.statSync(srcChild);
-        if (stats.isDirectory()) {
-            await processDirectory(srcChild, destChild);
-        } else {
-            await processFile(srcChild, destChild);
+async function processEntry(src, dest) {
+    if (!fs.existsSync(src)) return;
+    if (fs.statSync(src).isDirectory()) {
+        if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+        for (const child of fs.readdirSync(src)) {
+            await processEntry(path.join(src, child), path.join(dest, child));
         }
+    } else {
+        await processFile(src, dest);
     }
 }
 
 const frontendDir = path.join(rootDir, 'frontend');
 const publicDir = path.join(frontendDir, 'public');
-
-const frontendItems = [
-    'index.html',
-    'css',
-    'js',
-    'pages',
-    'assets'
-];
+const frontendItems = ['index.html', 'css', 'js', 'pages', 'assets'];
 
 async function main() {
     for (const item of frontendItems) {
-        const srcPath = path.join(frontendDir, item);
-        const destPath = path.join(outDir, item);
-        if (fs.existsSync(srcPath)) {
-            const stats = fs.statSync(srcPath);
-            if (stats.isDirectory()) {
-                await processDirectory(srcPath, destPath);
-            } else {
-                await processFile(srcPath, destPath);
-            }
-        }
+        await processEntry(path.join(frontendDir, item), path.join(outDir, item));
     }
-
     if (fs.existsSync(publicDir)) {
         for (const child of fs.readdirSync(publicDir)) {
-            const srcPath = path.join(publicDir, child);
-            const destPath = path.join(outDir, child);
-            const stats = fs.statSync(srcPath);
-            if (stats.isDirectory()) {
-                await processDirectory(srcPath, destPath);
-            } else {
-                await processFile(srcPath, destPath);
-            }
+            await processEntry(path.join(publicDir, child), path.join(outDir, child));
         }
     }
-
     console.log('[build-web] Web assets successfully compressed & minified to build/web/');
 }
 

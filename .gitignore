@@ -33,4 +33,3 @@ android/.gradle/
 android/local.properties
 android/capacitor-cordova-android-plugins/
 *.apk
-

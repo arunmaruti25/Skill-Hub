@@ -92,7 +92,7 @@ function renderNotifications(notifs) {
                     <p style="margin:6px 0;font-size:14px;color:var(--c-text-dark);">${n.message}</p>
                     <small style="color:var(--c-text-secondary);font-size:12px;">${new Date(n.createdAt).toLocaleString()}</small>
                 </div>
-                
+
                 <div style="display:flex;align-items:center;gap:8px;">
                     ${!n.read ? `
                         <button class="outline-btn" onclick="markNotificationRead('${n._id}')" style="padding:6px 12px;font-size:12px;">

@@ -61,6 +61,15 @@ const formatUser = u => ({
 
 const generateToken = u => jwt.sign({ id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email, role: u.role || "user" }, JWT_SECRET, { expiresIn: "7d" });
 
+const deleteLocalAvatar = p => {
+    if (p?.startsWith("/uploads/")) {
+        const old = path.join(__dirname, p);
+        if (fs.existsSync(old)) fs.unlink(old, () => {});
+    }
+};
+
+const parseSkills = s => Array.isArray(s) ? s : (typeof s === "string" ? s.split(",").map(x => x.trim()).filter(Boolean) : []);
+
 // Middlewares
 function authenticateToken(req, res, next) {
     const token = req.headers["authorization"]?.split(" ")[1];
@@ -226,11 +235,7 @@ const uploadImageHandler = (req, res) => {
             const user = await User.findById(targetId);
             if (!user) return res.status(404).json({ message: "User not found" });
 
-            if (user.profileImage?.startsWith("/uploads/")) {
-                const old = path.join(__dirname, user.profileImage);
-                if (fs.existsSync(old)) fs.unlink(old, () => {});
-            }
-
+            deleteLocalAvatar(user.profileImage);
             user.profileImage = "/uploads/" + req.file.filename;
             await user.save();
             res.json({ message: "Profile image uploaded successfully", user: formatUser(user) });
@@ -247,10 +252,7 @@ const deleteImageHandler = async (req, res) => {
         const user = await User.findById(targetId);
         if (!user) return res.status(404).json({ message: "User not found" });
 
-        if (user.profileImage?.startsWith("/uploads/")) {
-            const old = path.join(__dirname, user.profileImage);
-            if (fs.existsSync(old)) fs.unlink(old, () => {});
-        }
+        deleteLocalAvatar(user.profileImage);
         user.profileImage = "";
         await user.save();
         res.json({ message: "Profile image removed successfully", user: formatUser(user) });
@@ -296,7 +298,7 @@ app.post("/api/projects", authenticateToken, async (req, res) => {
         const ownerId = req.user.id || req.user._id; // Always from JWT, never from body
         if (!title || !description) return res.status(400).json({ message: "Title and description are required" });
 
-        const pSkills = Array.isArray(skills) ? skills : (typeof skills === "string" ? skills.split(",").map(s => s.trim()).filter(Boolean) : []);
+        const pSkills = parseSkills(skills);
         const project = await Project.create({ title: title.trim(), description: description.trim(), owner: ownerId, skills: pSkills, members: [ownerId] });
         res.status(201).json({ message: "Project created successfully", project: await Project.findById(project._id).populate("owner members", POP_USER) });
     } catch (e) { res.status(500).json({ message: "Server error creating project" }); }
@@ -311,7 +313,7 @@ app.put("/api/projects/:id", authenticateToken, async (req, res) => {
         const { title, description, skills } = req.body;
         if (title) project.title = title.trim();
         if (description) project.description = description.trim();
-        if (skills !== undefined) project.skills = Array.isArray(skills) ? skills : (typeof skills === "string" ? skills.split(",").map(s => s.trim()).filter(Boolean) : []);
+        if (skills !== undefined) project.skills = parseSkills(skills);
         await project.save();
         res.json({ message: "Project updated successfully", project: await Project.findById(project._id).populate("owner members", POP_USER) });
     } catch (e) { res.status(500).json({ message: "Server error updating project" }); }
@@ -390,7 +392,7 @@ app.post("/api/projects/:projectId/invite", authenticateToken, async (req, res) 
         if (!invitedUser) return res.status(404).json({ message: "Invited user not found" });
 
         const joinRequest = await JoinRequest.create({ project: project._id, requester: invitee, type: "invite" });
-        
+
         const notification = await Notification.create({
             recipient: invitee,
             message: `${inviterUser.name} invited you to join "${project.title}".`,
@@ -418,23 +420,12 @@ app.get("/api/requests", authenticateToken, async (req, res) => {
         const type = req.query.type || "received";
         const myProjects = await Project.find({ owner: uid });
         const myProjectIds = myProjects.map(p => p._id);
-        
-        if (type === "sent") {
-            const requests = await JoinRequest.find({
-                $or: [
-                    { requester: uid, type: "request" },
-                    { project: { $in: myProjectIds }, type: "invite" }
-                ]
-            }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
-            return res.json(requests);
-        }
-        
-        const requests = await JoinRequest.find({
-            $or: [
-                { project: { $in: myProjectIds }, type: "request" },
-                { requester: uid, type: "invite" }
-            ]
-        }).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
+
+        const query = type === "sent"
+            ? { $or: [{ requester: uid, type: "request" }, { project: { $in: myProjectIds }, type: "invite" }] }
+            : { $or: [{ project: { $in: myProjectIds }, type: "request" }, { requester: uid, type: "invite" }] };
+
+        const requests = await JoinRequest.find(query).populate("project", "title description owner").populate("requester", POP_USER).sort({ createdAt: -1 });
         res.json(requests);
     } catch (e) { res.status(500).json({ message: "Server error loading requests" }); }
 });
@@ -457,7 +448,7 @@ const processRequestStatus = async (requestId, status, userId) => {
 
     const project = await Project.findById(request.project._id || request.project);
     if (!project) throw new Error("Project not found");
-    
+
     if (request.type === "invite") {
         if (request.requester.toString() !== userId.toString()) throw new Error("Only the invited user can respond to this invite");
     } else {
@@ -473,7 +464,7 @@ const processRequestStatus = async (requestId, status, userId) => {
     }
 
     await Notification.updateMany(
-        { request: request._id, recipient: userId }, 
+        { request: request._id, recipient: userId },
         { $set: { read: true } }
     );
 
@@ -568,7 +559,7 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         if (!sUser || !rUser) return res.status(404).json({ message: "User not found" });
 
         const msg = await Message.create({ sender, receiver, message: message.trim() });
-        
+
         // Prevent duplicate unread message notifications from the same sender
         const existingNotif = await Notification.findOne({ recipient: receiver, type: "new_message", sender: sender, read: false });
         if (!existingNotif) {
@@ -579,7 +570,7 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
                 sender: sender
             });
         }
-        
+
         res.status(201).json(await Message.findById(msg._id).populate("sender receiver", POP_USER));
     } catch (e) { res.status(500).json({ message: "Could not send message" }); }
 });
@@ -706,11 +697,7 @@ app.delete("/api/admin/users/:id", authenticateToken, requireAdmin, async (req, 
         const uid = req.params.id;
         const user = await User.findById(uid);
         if (!user) return res.status(404).json({ message: "User not found" });
-
-        if (user.profileImage?.startsWith("/uploads/")) {
-            const img = path.join(__dirname, user.profileImage);
-            if (fs.existsSync(img)) fs.unlink(img, () => {});
-        }
+        deleteLocalAvatar(user.profileImage);
 
         await Promise.all([
             User.findByIdAndDelete(uid),

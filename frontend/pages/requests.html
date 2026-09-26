@@ -107,7 +107,7 @@ function renderRequests(requests, type) {
                             </a>
                         </h3>
                         <p style="margin:4px 0;font-size:13.5px;color:var(--c-text-secondary);">
-                            <strong>${type === 'received' ? 'Applicant' : 'Project Owner'}:</strong> 
+                            <strong>${type === 'received' ? 'Applicant' : 'Project Owner'}:</strong>
                             ${otherUser?.name || 'Developer'} ${otherUser?.email ? `(${otherUser.email})` : ''}
                         </p>
                         ${type === 'received' && otherUser?.skills?.length ? `
