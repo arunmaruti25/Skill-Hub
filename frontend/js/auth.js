@@ -36,6 +36,9 @@ function setAuthSession(token, user) {
     if (user) {
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("loggedIn", "true");
+        if (window.SkillHubNav && typeof window.SkillHubNav.updateMobileAvatar === "function") {
+            window.SkillHubNav.updateMobileAvatar();
+        }
     }
 }
 
@@ -191,6 +194,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!isPublicPage) {
         checkAdminAccess();
         updateSidebarBadges();
+        if (window.SkillHubNav && typeof window.SkillHubNav.updateMobileAvatar === "function") {
+            window.SkillHubNav.updateMobileAvatar();
+        }
         setInterval(updateSidebarBadges, 8000);
     }
 });

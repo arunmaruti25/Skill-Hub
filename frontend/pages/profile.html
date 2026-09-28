@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>My Profile - Skill Hub</title>
     <link rel="stylesheet" href="../css/style.css?v=1.2">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -16,22 +16,51 @@
     </style>
 </head>
 <body>
-<aside class="sidebar">
-    <a href="dashboard.html" class="logo"><img src="../assets/logo.png" alt="Skill Hub Logo" class="brand-logo-img" width="34" height="34" style="width:34px;height:34px;object-fit:cover;border-radius:8px;display:inline-block;flex-shrink:0;"> Skill Hub</a>
-    <nav>
-        <a href="dashboard.html"><i class="fa-solid fa-house"></i> Dashboard</a>
-        <a href="teammates.html"><i class="fa-solid fa-user-group"></i> Find Teammates</a>
-        <a href="projects.html"><i class="fa-solid fa-folder"></i> Projects</a>
-        <a href="requests.html"><i class="fa-solid fa-paper-plane"></i> Requests<span id="requestBadge" class="sidebar-badge">0</span></a>
-        <a href="notifications.html"><i class="fa-solid fa-bell"></i> Notifications<span id="notificationBadge" class="sidebar-badge">0</span></a>
-        <a href="messages.html"><i class="fa-solid fa-message"></i> Messages<span id="messageBadge" class="sidebar-badge">0</span></a>
-        <a href="admin.html" id="adminNavLink" style="display:none;"><i class="fa-solid fa-shield-halved"></i> Admin Panel</a>
-    </nav>
-    <div class="sidebar-bottom">
-        <a href="profile.html" class="active"><i class="fa-solid fa-user"></i> My Profile</a>
-        <a href="javascript:void(0)" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
-    </div>
-</aside>
+    <!-- Mobile Sticky Top Header (< 1024px) -->
+    <header class="mobile-top-bar" id="mobileTopBar" aria-label="Mobile Navigation Bar">
+        <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open navigation menu" aria-controls="sidebar" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        <a href="dashboard.html" class="mobile-logo">
+            <img src="../assets/logo.png" alt="Skill Hub Logo" class="brand-logo-img" width="34" height="34">
+            <span class="mobile-logo-text">Skill Hub</span>
+        </a>
+        <a href="profile.html" class="mobile-avatar-link" aria-label="View My Profile">
+            <div id="mobileUserAvatar" class="avatar mobile-avatar">U</div>
+        </a>
+    </header>
+
+    <!-- Mobile Drawer Overlay / Backdrop -->
+    <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+
+    <!-- Collapsible Sidebar / Off-Canvas Drawer -->
+    <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
+        <div class="sidebar-header">
+            <a href="dashboard.html" class="logo">
+                <img src="../assets/logo.png" alt="Skill Hub Logo" class="brand-logo-img" width="34" height="34">
+                <span class="logo-text">Skill Hub</span>
+            </a>
+            <button type="button" class="sidebar-collapse-btn" id="sidebarCollapseBtn" aria-label="Collapse sidebar" title="Collapse sidebar" aria-expanded="true">
+                <i class="fa-solid fa-angles-left"></i>
+            </button>
+            <button type="button" class="drawer-close-btn" id="drawerCloseBtn" aria-label="Close navigation menu">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <nav>
+            <a href="dashboard.html" title="Dashboard" data-tooltip="Dashboard"><i class="fa-solid fa-house"></i> <span class="nav-label">Dashboard</span></a>
+            <a href="teammates.html" title="Find Teammates" data-tooltip="Find Teammates"><i class="fa-solid fa-user-group"></i> <span class="nav-label">Find Teammates</span></a>
+            <a href="projects.html" title="Projects" data-tooltip="Projects"><i class="fa-solid fa-folder"></i> <span class="nav-label">Projects</span></a>
+            <a href="requests.html" title="Requests" data-tooltip="Requests"><i class="fa-solid fa-paper-plane"></i> <span class="nav-label">Requests</span><span id="requestBadge" class="sidebar-badge">0</span></a>
+            <a href="notifications.html" title="Notifications" data-tooltip="Notifications"><i class="fa-solid fa-bell"></i> <span class="nav-label">Notifications</span><span id="notificationBadge" class="sidebar-badge">0</span></a>
+            <a href="messages.html" title="Messages" data-tooltip="Messages"><i class="fa-solid fa-message"></i> <span class="nav-label">Messages</span><span id="messageBadge" class="sidebar-badge">0</span></a>
+            <a href="admin.html" id="adminNavLink" style="display:none;" title="Admin Panel" data-tooltip="Admin Panel"><i class="fa-solid fa-shield-halved"></i> <span class="nav-label">Admin Panel</span></a>
+        </nav>
+        <div class="sidebar-bottom">
+            <a href="profile.html" class="active" title="My Profile" data-tooltip="My Profile"><i class="fa-solid fa-user"></i> <span class="nav-label">My Profile</span></a>
+            <a href="javascript:void(0)" onclick="logout()" title="Logout" data-tooltip="Logout"><i class="fa-solid fa-right-from-bracket"></i> <span class="nav-label">Logout</span></a>
+        </div>
+    </aside>
 
 <main class="dashboard">
     <div class="page-head">
@@ -141,6 +170,7 @@
 
 <script src="../js/auth.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/nav.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     if (!requireAuth()) return;
