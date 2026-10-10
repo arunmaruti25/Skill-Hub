@@ -1,7 +1,9 @@
+$ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Drawing
 
 $srcPath = Join-Path $PSScriptRoot "..\frontend\assets\logo.png"
-$resDir = "d:\SKILL HUB\android\app\src\main\res"
+$resDir = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\android\app\src\main\res"))
+$brandBackground = [System.Drawing.ColorTranslator]::FromHtml("#F2F7FB")
 
 if (-not (Test-Path $srcPath)) {
     Write-Error "Source image not found: $srcPath"
@@ -60,8 +62,8 @@ foreach ($folder in $iconSizes.Keys) {
     $iconPath = Join-Path $resDir "$folder\ic_launcher.png"
     $roundPath = Join-Path $resDir "$folder\ic_launcher_round.png"
     
-    Resize-Image $srcImg $size $size $iconPath 1.0
-    Resize-Image $srcImg $size $size $roundPath 1.0
+    Resize-Image $srcImg $size $size $iconPath 0.84 $brandBackground
+    Resize-Image $srcImg $size $size $roundPath 0.84 $brandBackground
 }
 
 
@@ -77,11 +79,10 @@ $fgSizes = @{
 foreach ($folder in $fgSizes.Keys) {
     $size = $fgSizes[$folder]
     $fgPath = Join-Path $resDir "$folder\ic_launcher_foreground.png"
-    Resize-Image $srcImg $size $size $fgPath 0.75
+    Resize-Image $srcImg $size $size $fgPath (66.0 / 108.0)
 }
 
 
-$darkColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
 $splashSizes = @{
     "drawable" = @{ w = 480; h = 800; scale = 0.55 }
     "drawable-port-mdpi" = @{ w = 320; h = 480; scale = 0.55 }
@@ -105,7 +106,7 @@ function Generate-Splash($source, $w, $h, $scale, $outPath) {
     $g.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
     $g.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
 
-    $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(255, 6, 8, 20))
+    $brush = New-Object System.Drawing.SolidBrush($brandBackground)
     $g.FillRectangle($brush, 0, 0, $w, $h)
     $brush.Dispose()
 

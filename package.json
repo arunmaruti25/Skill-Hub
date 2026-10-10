@@ -7,7 +7,8 @@
     "build": "node scripts/build-web.js",
     "cap:sync": "npm run build && npx cap sync android",
     "cap:open": "npx cap open android",
-    "build:apk": "npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleDebug && node -e \"require('fs').copyFileSync('app/build/outputs/apk/debug/skillhub.apk', '../skillhub.apk')\""
+    "icons:android": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-icons.ps1",
+    "build:apk": "npm run icons:android && npm run build && npx cap sync android && cd android && .\\gradlew.bat assembleDebug && node -e \"require('fs').copyFileSync('app/build/outputs/apk/debug/skillhub.apk', '../skillhub.apk')\""
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
