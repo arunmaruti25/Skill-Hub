@@ -165,7 +165,7 @@ assert(!registerPage.includes('resendVerification'), "register.html: resendVerif
 console.log("\n8. Testing CSS Variable Palette...");
 try {
     const cssContent = fs.readFileSync(path.join(frontendDir, 'css', 'style.css'), 'utf8');
-    const requiredColors = ['#2F4156', '#567C8D', '#C8D9E6', '#F5EFEB', '#FFFFFF'];
+    const requiredColors = ['#2F4156', '#8DB4D6', '#D6E6F2', '#F2F7FB', '#FFFFFF'];
     requiredColors.forEach(color => {
         assert(cssContent.toUpperCase().includes(color.toUpperCase()), `CSS includes required palette color: ${color}`);
     });

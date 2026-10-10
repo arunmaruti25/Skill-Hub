@@ -7,59 +7,70 @@
     <meta name="description" content="Find teammates, collaborate on projects, and showcase your skills on Skill Hub.">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="css/style.css?v=1.2">
+    <link rel="stylesheet" href="css/landing.css?v=1.0">
 </head>
-<body>
+<body class="landing-page">
     <header class="landing-nav">
+      <nav class="landing-nav-inner" aria-label="Main navigation">
         <a href="index.html" class="landing-logo">
             <img src="assets/logo.png" alt="Skill Hub Logo" class="brand-logo-img" width="34" height="34" style="width:34px;height:34px;object-fit:cover;border-radius:8px;display:inline-block;flex-shrink:0;">
             Skill Hub
         </a>
+        <button class="landing-menu-toggle" type="button" aria-expanded="false" aria-controls="landingMenu" aria-label="Open menu" hidden><i class="fa-solid fa-bars" aria-hidden="true"></i></button>
+        <div class="landing-menu" id="landingMenu">
         <ul class="nav-links">
             <li><a href="#skills">Skills</a></li>
             <li><a href="#how">How It Works</a></li>
             <li><a href="#community">Community</a></li>
         </ul>
-        <div id="authActions" style="display:flex;gap:10px;">
+        <div id="authActions">
             <a href="pages/login.html" class="outline-btn">Sign In</a>
             <a href="pages/register.html" class="primary-btn">Get Started</a>
         </div>
+        </div>
+      </nav>
     </header>
 
     <main>
-        <section class="hero">
-            <div class="hero-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Connect &bull; Collaborate &bull; Build Projects</div>
-            <h1>Build Amazing<br><span>Projects Together</span></h1>
-            <p>Find talented builders with complementary skills to form dream teams for college projects, hackathons, side projects, and open-source applications.</p>
-            <form class="search-box" onsubmit="handleSearch(event)">
-                <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="searchInput" placeholder="Search Python, React, UI/UX designers...">
-                <button type="submit" class="primary-btn" style="padding:8px 16px;font-size:12px;">Search</button>
-            </form>
+        <section class="hero" aria-labelledby="heroTitle">
+            <div class="hero-light" aria-hidden="true"></div>
+            <a class="hero-badge hero-enter" href="#how"><span>Good ideas start with great teammates</span><span class="hero-badge-arrow"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span></a>
+            <h1 id="heroTitle" class="hero-enter">Build amazing<br><span>projects together.</span></h1>
+            <p class="hero-description hero-enter">Your next big idea deserves the right people. Find teammates, share your skills, and turn what if into what&rsquo;s next.</p>
             <div class="hero-cta-group">
-                <a href="pages/register.html" class="primary-btn"><i class="fa-solid fa-rocket"></i> Get Started Free <i class="fa-solid fa-arrow-right"></i></a>
-                <a href="#skills" class="outline-btn"><i class="fa-solid fa-magnifying-glass"></i> Explore Skills</a>
+                <div class="hero-button-frame hero-enter"><a href="pages/register.html" class="primary-btn">Get Started Free <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a></div>
+                <a href="#skills" class="hero-secondary hero-enter">Explore Skills <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></a>
             </div>
+            <form class="search-box hero-enter" role="search" onsubmit="handleSearch(event)">
+                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                <input type="text" id="searchInput" aria-label="Search teammates by skill or keyword" placeholder="Try Python, React, or UI/UX...">
+                <button type="submit" class="primary-btn">Search</button>
+            </form>
+            <p class="hero-note hero-enter">For college projects, hackathons, and the ideas you can&rsquo;t stop thinking about.</p>
+
         </section>
 
         <section class="section" id="skills">
             <div class="section-header">
-                <h2>Popular Skills</h2>
+                <span class="landing-eyebrow">DIFFERENT SKILLS. SHARED AMBITION.</span>
+                <h2>Find your kind of talent.</h2>
                 <p>Explore some of the high-demand skills available on Skill Hub.</p>
             </div>
             <div class="skills-grid">
-                <div class="skill-card" onclick="filterBySkill('Python')"><i class="fa-brands fa-python"></i><span>Python</span></div>
-                <div class="skill-card" onclick="filterBySkill('React')"><i class="fa-brands fa-react"></i><span>React</span></div>
-                <div class="skill-card" onclick="filterBySkill('Java')"><i class="fa-brands fa-java"></i><span>Java</span></div>
-                <div class="skill-card" onclick="filterBySkill('UI/UX')"><i class="fa-solid fa-palette"></i><span>UI/UX</span></div>
-                <div class="skill-card" onclick="filterBySkill('JavaScript')"><i class="fa-brands fa-js"></i><span>JavaScript</span></div>
-                <div class="skill-card" onclick="filterBySkill('AI / ML')"><i class="fa-solid fa-brain"></i><span>AI / ML</span></div>
-                <div class="skill-card" onclick="filterBySkill('C++')"><i class="fa-solid fa-code"></i><span>C++</span></div>
-                <div class="skill-card" onclick="filterBySkill('Database')"><i class="fa-solid fa-database"></i><span>Database</span></div>
+                <button type="button" class="skill-card" onclick="filterBySkill('Python')"><i class="fa-brands fa-python" aria-hidden="true"></i><span>Python</span></button>
+                <button type="button" class="skill-card" onclick="filterBySkill('React')"><i class="fa-brands fa-react" aria-hidden="true"></i><span>React</span></button>
+                <button type="button" class="skill-card" onclick="filterBySkill('Java')"><i class="fa-brands fa-java" aria-hidden="true"></i><span>Java</span></button>
+                <button type="button" class="skill-card" onclick="filterBySkill('UI/UX')"><i class="fa-solid fa-palette" aria-hidden="true"></i><span>UI/UX</span></button>
+                <button type="button" class="skill-card" onclick="filterBySkill('JavaScript')"><i class="fa-brands fa-js" aria-hidden="true"></i><span>JavaScript</span></button>
+                <button type="button" class="skill-card" onclick="filterBySkill('AI / ML')"><i class="fa-solid fa-brain" aria-hidden="true"></i><span>AI / ML</span></button>
+                <button type="button" class="skill-card" onclick="filterBySkill('C++')"><i class="fa-solid fa-code" aria-hidden="true"></i><span>C++</span></button>
+                <button type="button" class="skill-card" onclick="filterBySkill('Database')"><i class="fa-solid fa-database" aria-hidden="true"></i><span>Database</span></button>
             </div>
         </section>
 
         <section class="section" id="how">
             <div class="section-header">
+                <span class="landing-eyebrow">FROM AN IDEA TO A TEAM</span>
                 <h2>How It Works</h2>
                 <p>Three simple steps to find your ideal project team.</p>
             </div>
@@ -102,6 +113,7 @@
     </footer>
 
     <script src="js/auth.js"></script>
+    <script src="js/landing.js"></script>
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const token = getAuthToken();

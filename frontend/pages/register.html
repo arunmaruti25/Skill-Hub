@@ -5,51 +5,160 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Skill Hub</title>
     <link rel="stylesheet" href="../css/style.css?v=1.2">
+    <link rel="stylesheet" href="../css/auth-switch.css?v=1.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 </head>
-<body>
-<div class="auth-page">
-    <div class="auth-box">
-        <a href="../index.html" class="logo"><img src="../assets/logo.png" alt="Skill Hub Logo" class="brand-logo-img" width="34" height="34" style="width:34px;height:34px;object-fit:cover;border-radius:8px;display:inline-block;flex-shrink:0;"> Skill Hub</a>
-        <h1>Create Account</h1>
-        <p>Join Skill Hub and start collaborating today</p>
+<body class="auth-switch-page">
+<main class="auth-layout">
+    <header class="auth-header">
+        <a href="../index.html" class="auth-brand"><img src="../assets/logo.png" alt="" width="34" height="34"> Skill Hub</a>
+        <a href="../index.html" class="auth-home-link"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> <span>Back to home</span></a>
+    </header>
 
-        <form id="registerForm">
-            <label for="regName">Full Name</label>
-            <input type="text" id="regName" name="name" placeholder="John Doe" required autocomplete="name">
+    <div class="auth-shell sign-up-mode">
+        <div class="auth-forms">
+            <form id="loginForm" class="auth-form" data-auth-form="login" aria-labelledby="loginHeading" hidden inert aria-hidden="true">
+                <span class="auth-eyebrow">Your next chapter</span>
+                <h1 id="loginHeading" tabindex="-1">Welcome back.</h1>
+                <p class="auth-subtitle">Your projects, your people. Pick up where you left off.</p>
 
-            <label for="regEmail">Email Address</label>
-            <input type="email" id="regEmail" name="email" placeholder="you@example.com" required autocomplete="email">
+                <div class="auth-field">
+                    <label for="loginEmail">Email address</label>
+                    <div class="auth-input">
+                        <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+                        <input type="email" id="loginEmail" name="email" placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                </div>
 
-            <label for="regPassword">Password (min 6 characters)</label>
-            <div class="password-wrapper">
-                <input type="password" id="regPassword" name="password" placeholder="Create a strong password" required minlength="6" autocomplete="new-password">
-                <button type="button" class="toggle-password-btn" onclick="togglePassword('regPassword', this)">
-                    <i class="fa-solid fa-eye"></i>
-                </button>
+                <div class="auth-field">
+                    <div class="auth-label-row">
+                        <label for="loginPassword">Password</label>
+                        <a href="forgot-password.html">Forgot password?</a>
+                    </div>
+                    <div class="auth-input">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        <input type="password" id="loginPassword" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                        <button type="button" class="auth-password-toggle" onclick="togglePassword('loginPassword', this)" aria-label="Show password" aria-controls="loginPassword" aria-pressed="false" data-password-label="password"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <button type="submit" class="primary-btn auth-submit">Sign In <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                <p class="auth-link">New to Skill Hub? <a href="register.html" data-auth-switch="register">Create an account</a></p>
+            </form>
+
+            <form id="registerForm" class="auth-form" data-auth-form="register" aria-labelledby="registerHeading">
+                <span class="auth-eyebrow">A little curiosity. A lot of possibility.</span>
+                <h1 id="registerHeading" tabindex="-1">Create your account.</h1>
+                <p class="auth-subtitle">Find your people. Bring your next idea to life.</p>
+
+                <div class="auth-field">
+                    <label for="regName">Full name</label>
+                    <div class="auth-input">
+                        <i class="fa-regular fa-user" aria-hidden="true"></i>
+                        <input type="text" id="regName" name="name" placeholder="John Doe" required autocomplete="name">
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="regEmail">Email address</label>
+                    <div class="auth-input">
+                        <i class="fa-regular fa-envelope" aria-hidden="true"></i>
+                        <input type="email" id="regEmail" name="email" placeholder="you@example.com" required autocomplete="email">
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="regPassword">Password (min 6 characters)</label>
+                    <div class="auth-input">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        <input type="password" id="regPassword" name="password" placeholder="Create a strong password" required minlength="6" autocomplete="new-password">
+                        <button type="button" class="auth-password-toggle" onclick="togglePassword('regPassword', this)" aria-label="Show password" aria-controls="regPassword" aria-pressed="false" data-password-label="password"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <div class="auth-field">
+                    <label for="regConfirm">Confirm password</label>
+                    <div class="auth-input">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        <input type="password" id="regConfirm" name="confirmPassword" placeholder="Repeat your password" required autocomplete="new-password">
+                        <button type="button" class="auth-password-toggle" onclick="togglePassword('regConfirm', this)" aria-label="Show confirm password" aria-controls="regConfirm" aria-pressed="false" data-password-label="confirm password"><i class="fa-solid fa-eye" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <button type="submit" class="primary-btn auth-submit">Create Account <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                <p class="auth-link">Already have an account? <a href="login.html" data-auth-switch="login">Sign in</a></p>
+            </form>
+        </div>
+
+        <aside class="auth-panel auth-panel-left" data-auth-panel="login" hidden inert aria-hidden="true">
+            <div class="auth-panel-content">
+                <div class="auth-emblem" aria-hidden="true"><i class="fa-solid fa-people-group"></i></div>
+                <h2>Better ideas.<br>Built together.</h2>
+                <p>Meet developers who share your curiosity. Find a project, bring your skills, and make something that matters.</p>
+                <a href="register.html" class="auth-panel-link" data-auth-switch="register">Sign up <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
             </div>
+        </aside>
 
-            <label for="regConfirm">Confirm Password</label>
-            <div class="password-wrapper">
-                <input type="password" id="regConfirm" name="confirmPassword" placeholder="Repeat your password" required autocomplete="new-password">
-                <button type="button" class="toggle-password-btn" onclick="togglePassword('regConfirm', this)">
-                    <i class="fa-solid fa-eye"></i>
-                </button>
+        <aside class="auth-panel auth-panel-right" data-auth-panel="register">
+            <div class="auth-panel-content">
+                <div class="auth-emblem" aria-hidden="true"><i class="fa-solid fa-seedling"></i></div>
+                <h2>A place to build.<br>A place to belong.</h2>
+                <p>Your next great collaboration starts here. Already part of the community? Your team is waiting for you.</p>
+                <a href="login.html" class="auth-panel-link" data-auth-switch="login">Sign in <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
             </div>
-
-            <button type="submit" class="primary-btn" style="width:100%;height:46px;margin-top:4px;">
-                <i class="fa-solid fa-user-plus"></i> Create Account
-            </button>
-        </form>
-
-        <p class="auth-link">Already have an account? <a href="login.html">Sign in</a></p>
+        </aside>
     </div>
-</div>
+
+    <footer class="auth-footer">A little skill. A shared idea. Something great.</footer>
+</main>
 
 <div id="toast-container"></div>
 
 <script src="../js/auth.js"></script>
 <script src="../js/app.js"></script>
+<script src="../js/auth-switch.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    if (getAuthToken() && getAuthUser()?.name) {
+        window.location.href = "dashboard.html";
+        return;
+    }
+
+    const form = document.getElementById("loginForm");
+    form?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = form.querySelector("button[type='submit']");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in...';
+        btn.disabled = true;
+
+        const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+        const password = document.getElementById("loginPassword").value;
+
+        try {
+            const res = await fetch(`${API_BASE_URL}/api/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+            const result = await res.json();
+
+            if (res.ok && result.token) {
+                setAuthSession(result.token, result.user);
+                showToast("Welcome back!", "success");
+                setTimeout(() => window.location.href = "dashboard.html", 400);
+            } else {
+                showToast(result.message || "Invalid email or password", "error");
+            }
+        } catch (err) {
+            showToast("Network error. Please try again.", "error");
+        } finally {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        }
+    });
+});
+</script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     if (getAuthToken() && getAuthUser()?.name) {
