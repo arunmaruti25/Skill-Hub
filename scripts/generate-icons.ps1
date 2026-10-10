@@ -46,7 +46,7 @@ function Resize-Image($source, $targetWidth, $targetHeight, $outPath, $fitScale 
     Write-Host "Generated: $outPath ($targetWidth x $targetHeight)"
 }
 
-# 1. Standard / Legacy Icons (ic_launcher.png & ic_launcher_round.png)
+
 $iconSizes = @{
     "mipmap-mdpi" = 48
     "mipmap-hdpi" = 72
@@ -64,8 +64,8 @@ foreach ($folder in $iconSizes.Keys) {
     Resize-Image $srcImg $size $size $roundPath 1.0
 }
 
-# 2. Adaptive Foreground Icons (ic_launcher_foreground.png)
-# Canvas is 108dp, safe area is 72dp (~72-80% scale to ensure nothing gets cropped by OEM rounded/circle masks)
+
+
 $fgSizes = @{
     "mipmap-mdpi" = 108
     "mipmap-hdpi" = 162
@@ -80,7 +80,7 @@ foreach ($folder in $fgSizes.Keys) {
     Resize-Image $srcImg $size $size $fgPath 0.75
 }
 
-# 3. Splash Screens (splash.png) centered on sleek dark background #000000
+
 $darkColor = [System.Drawing.Color]::FromArgb(255, 0, 0, 0)
 $splashSizes = @{
     "drawable" = @{ w = 480; h = 800; scale = 0.55 }

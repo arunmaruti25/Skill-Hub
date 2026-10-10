@@ -20,7 +20,7 @@ const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || "skillhub_super_secret_jwt_key_2026";
 const POP_USER = "name email profileImage profession skills bio";
 
-// ================= STORAGE & MIDDLEWARE =================
+
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -50,7 +50,7 @@ const authLimiter = rateLimit({
     message: { message: "Too many authentication attempts. Please try again later." }
 });
 
-// Helper: Format User
+
 const formatUser = u => ({
     id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email,
     profession: u.profession || "", bio: u.bio || "", location: u.location || "",
@@ -70,7 +70,7 @@ const deleteLocalAvatar = p => {
 
 const parseSkills = s => Array.isArray(s) ? s : (typeof s === "string" ? s.split(",").map(x => x.trim()).filter(Boolean) : []);
 
-// Middlewares
+
 function authenticateToken(req, res, next) {
     const token = req.headers["authorization"]?.split(" ")[1];
     if (!token) return res.status(401).json({ message: "Access denied. No token provided." });
@@ -94,7 +94,7 @@ async function requireAdmin(req, res, next) {
     next();
 }
 
-// ================= AUTH ROUTES =================
+
 app.get("/", (req, res) => res.json({ status: "ok", message: "Skill Hub Backend is running!" }));
 
 const handleRegister = async (req, res) => {
@@ -164,7 +164,7 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
     res.json({ user: formatUser(user) });
 });
 
-// ================= SKILLS =================
+
 app.get("/api/skills", async (req, res) => {
     try {
         const defaults = ["React", "Node.js", "Python", "JavaScript", "TypeScript", "UI/UX", "Java", "C++", "AI / ML", "Database", "MongoDB", "Express", "HTML/CSS", "Tailwind CSS", "Figma", "Docker", "DevOps", "AWS", "Flutter", "SQL"];
@@ -173,7 +173,7 @@ app.get("/api/skills", async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Could not load skills" }); }
 });
 
-// ================= USERS & PROFILE =================
+
 app.get("/api/users", optionalAuth, async (req, res) => {
     try {
         const { search, skill } = req.query;
@@ -201,8 +201,8 @@ const updateProfileHandler = async (req, res) => {
         const targetId = req.params.id;
         const requesterId = req.user.id || req.user._id;
 
-        // Only the profile owner can update their own profile (admin cannot modify profiles via this endpoint for oversight)
-        // The existing behavior: admin CAN edit profiles (legitimate moderation). We enforce: password never touched here.
+
+
         if (requesterId !== targetId && req.user.role !== "admin") {
             return res.status(403).json({ message: "Unauthorized profile update" });
         }
@@ -211,9 +211,9 @@ const updateProfileHandler = async (req, res) => {
         const updateData = {};
         fields.forEach(f => { if (req.body[f] !== undefined) updateData[f] = typeof req.body[f] === "string" ? req.body[f].trim() : req.body[f]; });
         if (req.body.skills !== undefined) updateData.skills = Array.isArray(req.body.skills) ? req.body.skills : [];
-        // Only allow admin to update email (legitimate admin moderation)
+
         if (req.body.email && req.user?.role === "admin") updateData.email = req.body.email.toLowerCase().trim();
-        // Never allow password to be set via profile update
+
         delete updateData.password;
 
         const user = await User.findByIdAndUpdate(targetId, updateData, { new: true, runValidators: true }).select("-password");
@@ -269,7 +269,7 @@ app.get("/api/users/:id/projects", async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Could not load user projects" }); }
 });
 
-// ================= PROJECTS =================
+
 app.get("/api/projects", optionalAuth, async (req, res) => {
     try {
         const { search, skill, sort } = req.query;
@@ -295,7 +295,7 @@ app.get("/api/projects/:id", optionalAuth, async (req, res) => {
 app.post("/api/projects", authenticateToken, async (req, res) => {
     try {
         const { title, description, skills } = req.body;
-        const ownerId = req.user.id || req.user._id; // Always from JWT, never from body
+        const ownerId = req.user.id || req.user._id;
         if (!title || !description) return res.status(400).json({ message: "Title and description are required" });
 
         const pSkills = parseSkills(skills);
@@ -333,7 +333,7 @@ app.delete("/api/projects/:id", authenticateToken, async (req, res) => {
 const handleJoinRequestCreation = async (req, res) => {
     try {
         const projectId = req.params.projectId || req.params.id;
-        const requesterId = req.user?.id || req.user?._id; // Always from JWT
+        const requesterId = req.user?.id || req.user?._id;
         if (!requesterId) return res.status(401).json({ message: "Requester authentication required" });
 
         const project = await Project.findById(projectId);
@@ -413,10 +413,10 @@ app.get("/api/projects/:projectId/requests", authenticateToken, async (req, res)
     res.json(requests);
 });
 
-// ================= REQUESTS =================
+
 app.get("/api/requests", authenticateToken, async (req, res) => {
     try {
-        const uid = req.user.id || req.user._id; // Always from JWT
+        const uid = req.user.id || req.user._id;
         const type = req.query.type || "received";
         const myProjects = await Project.find({ owner: uid });
         const myProjectIds = myProjects.map(p => p._id);
@@ -519,9 +519,9 @@ app.delete("/api/requests/:requestId", authenticateToken, async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Server error deleting request" }); }
 });
 
-// ================= NOTIFICATIONS =================
+
 const getNotificationsHandler = async (req, res) => {
-    const uid = req.user?.id || req.user?._id; // Always from JWT, not params
+    const uid = req.user?.id || req.user?._id;
     if (!uid) return res.status(401).json({ message: "User ID required" });
     const notifications = await Notification.find({ recipient: uid }).populate("project", "title").populate("request").sort({ createdAt: -1 });
     res.json(notifications);
@@ -536,7 +536,7 @@ app.put("/api/notifications/:id/read", authenticateToken, async (req, res) => {
 });
 
 const markAllReadHandler = async (req, res) => {
-    const uid = req.user?.id || req.user?._id; // Always from JWT
+    const uid = req.user?.id || req.user?._id;
     if (!uid) return res.status(401).json({ message: "User ID required" });
     await Notification.updateMany({ recipient: uid, read: false }, { $set: { read: true } });
     res.json({ message: "All notifications marked as read" });
@@ -544,12 +544,12 @@ const markAllReadHandler = async (req, res) => {
 app.put("/api/notifications/read-all", authenticateToken, markAllReadHandler);
 app.put("/api/notifications/read-all/:userId", authenticateToken, markAllReadHandler);
 
-// Invites are now handled via /api/requests endpoints
 
-// ================= MESSAGES (PRIVATE — IDOR PROTECTED) =================
+
+
 app.post("/api/messages", authenticateToken, async (req, res) => {
     try {
-        // Sender is ALWAYS derived from verified JWT — never trust req.body.sender
+
         const sender = req.user.id || req.user._id;
         const { receiver, message } = req.body;
         if (!receiver || !message?.trim()) return res.status(400).json({ message: "Receiver and message text are required" });
@@ -560,7 +560,7 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
 
         const msg = await Message.create({ sender, receiver, message: message.trim() });
 
-        // Prevent duplicate unread message notifications from the same sender
+
         const existingNotif = await Notification.findOne({ recipient: receiver, type: "new_message", sender: sender, read: false });
         if (!existingNotif) {
             await Notification.create({
@@ -580,14 +580,14 @@ app.get("/api/messages/:user1/:user2", authenticateToken, async (req, res) => {
         const { user1, user2 } = req.params;
         const currentUserId = req.user.id || req.user._id;
 
-        // Security: only participants or admin can read the conversation
+
         if (currentUserId !== user1 && currentUserId !== user2 && req.user.role !== "admin") {
             return res.status(403).json({ message: "Access denied. You are not a participant in this conversation." });
         }
 
         const messages = await Message.find({ $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }] }).populate("sender receiver", POP_USER).sort({ createdAt: 1 });
 
-        // Only mark messages as read if requester is a participant (not admin oversight)
+
         if (req.user.role !== "admin") {
             const otherId = currentUserId === user1 ? user2 : user1;
             await Message.updateMany({ sender: otherId, receiver: currentUserId, read: false }, { $set: { read: true } });
@@ -598,7 +598,7 @@ app.get("/api/messages/:user1/:user2", authenticateToken, async (req, res) => {
 });
 
 app.put("/api/messages/read/:userId/:otherUserId", authenticateToken, async (req, res) => {
-    // Enforce: only the recipient (userId) can mark their messages as read — not anyone else
+
     const currentUserId = req.user.id || req.user._id;
     if (currentUserId !== req.params.userId && req.user.role !== "admin") {
         return res.status(403).json({ message: "Access denied." });
@@ -609,7 +609,7 @@ app.put("/api/messages/read/:userId/:otherUserId", authenticateToken, async (req
 
 const getConversationsHandler = async (req, res) => {
     try {
-        // Always derive from JWT — never trust req.params.userId for the authenticated user
+
         const uid = req.user?.id || req.user?._id;
         if (!uid) return res.status(401).json({ message: "Authentication required" });
 
@@ -641,7 +641,7 @@ app.get("/api/messages/conversations", authenticateToken, getConversationsHandle
 app.get("/api/messages/user/:userId", authenticateToken, getConversationsHandler);
 app.get("/api/message-inbox/:userId", authenticateToken, getConversationsHandler);
 
-// ================= DASHBOARD =================
+
 app.get("/api/dashboard/:userId", authenticateToken, async (req, res) => {
     try {
         const uid = req.params.userId || req.user.id;
@@ -666,7 +666,7 @@ app.get("/api/dashboard/:userId", authenticateToken, async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Could not load dashboard data" }); }
 });
 
-// ================= ADMIN =================
+
 app.get("/api/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
     try {
         const [totalUsers, totalProjects, totalRequests, totalMessages] = await Promise.all([User.countDocuments(), Project.countDocuments(), JoinRequest.countDocuments(), Message.countDocuments()]);
@@ -681,7 +681,7 @@ app.get("/api/admin/users", authenticateToken, requireAdmin, async (req, res) =>
     } catch (e) { res.status(500).json({ message: "Could not load users" }); }
 });
 
-// Admin read-only chat oversight — strictly GET, no modification endpoints
+
 app.get("/api/admin/messages/:user1/:user2", authenticateToken, requireAdmin, async (req, res) => {
     try {
         const { user1, user2 } = req.params;
@@ -711,9 +711,9 @@ app.delete("/api/admin/users/:id", authenticateToken, requireAdmin, async (req, 
     } catch (e) { res.status(500).json({ message: "Could not delete user" }); }
 });
 
-// Admin cannot delete projects directly per oversight rules
 
-// ================= ERROR & START =================
+
+
 app.use((req, res) => res.status(404).json({ message: `Endpoint ${req.method} ${req.originalUrl} not found` }));
 app.use((err, req, res, next) => res.status(500).json({ message: "Internal server error", error: err.message }));
 

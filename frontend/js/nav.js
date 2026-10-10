@@ -1,8 +1,8 @@
-/**
- * Skill Hub - Navigation & Responsive Drawer Controller (nav.js)
- * Handles desktop collapsible sidebar, mobile slide-in drawer, touch gestures,
- * accessibility (ARIA, focus trap), Capacitor/Android back button, and safe areas.
- */
+
+
+
+
+
 
 (function () {
     'use strict';
@@ -13,7 +13,7 @@
     let historyStatePushed = false;
     let previousActiveElement = null;
 
-    // ================= DOM ELEMENTS =================
+
     function getElements() {
         return {
             body: document.body,
@@ -27,7 +27,7 @@
         };
     }
 
-    // ================= DESKTOP COLLAPSE CONTROLLER =================
+
     function isDesktop() {
         return window.innerWidth >= BREAKPOINT_DESKTOP;
     }
@@ -55,7 +55,7 @@
                 }
             }
         } else {
-            // In mobile mode, remove desktop collapsed class
+
             body.classList.remove('sidebar-collapsed');
             if (!body.classList.contains('drawer-open')) {
                 sidebar.setAttribute('aria-hidden', 'true');
@@ -78,7 +78,7 @@
         }
     }
 
-    // ================= MOBILE DRAWER CONTROLLER =================
+
     function isDrawerOpen() {
         return document.body.classList.contains('drawer-open');
     }
@@ -98,7 +98,7 @@
             backdrop.setAttribute('aria-hidden', 'false');
         }
 
-        // Push state for Android hardware back button & mobile browser back
+
         if (!historyStatePushed) {
             try {
                 window.history.pushState({ drawerOpen: true }, '');
@@ -106,7 +106,7 @@
             } catch (e) {}
         }
 
-        // Focus trap initial focus
+
         requestAnimationFrame(() => {
             if (closeBtn && typeof closeBtn.focus === 'function') {
                 closeBtn.focus();
@@ -131,7 +131,7 @@
             backdrop.setAttribute('aria-hidden', 'true');
         }
 
-        // Handle history state clean up
+
         if (popHistory && historyStatePushed) {
             historyStatePushed = false;
             try {
@@ -143,7 +143,7 @@
             historyStatePushed = false;
         }
 
-        // Restore focus
+
         if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
             previousActiveElement.focus();
             previousActiveElement = null;
@@ -160,19 +160,19 @@
         }
     }
 
-    // ================= KEYBOARD & ACCESSIBILITY =================
+
     function initKeyboardAccessibility() {
         document.addEventListener('keydown', (e) => {
             if (!isDrawerOpen()) return;
 
-            // Close on Escape key
+
             if (e.key === 'Escape' || e.key === 'Esc') {
                 e.preventDefault();
                 closeDrawer();
                 return;
             }
 
-            // Focus trap inside drawer
+
             if (e.key === 'Tab') {
                 const { sidebar } = getElements();
                 if (!sidebar) return;
@@ -200,9 +200,9 @@
         });
     }
 
-    // ================= CAPACITOR & WEBVIEW BACK BUTTON =================
+
     function initBackButton() {
-        // 1. Capacitor native app listener (if @capacitor/app is available)
+
         try {
             const cap = window.Capacitor;
             if (cap && cap.Plugins && cap.Plugins.App && typeof cap.Plugins.App.addListener === 'function') {
@@ -220,23 +220,23 @@
             console.warn('Capacitor backButton setup note:', err);
         }
 
-        // 2. Browser history / popstate listener (works inside WebView & mobile browsers)
+
         window.addEventListener('popstate', (e) => {
             if (isDrawerOpen()) {
-                // Drawer was closed via browser/hardware back
+
                 closeDrawer(false);
             }
         });
     }
 
-    // ================= TOUCH GESTURES (SWIPE) =================
+
     function initTouchGestures() {
         let touchStartX = 0;
         let touchStartY = 0;
         let isTrackingDrawerSwipe = false;
         let isTrackingEdgeSwipe = false;
 
-        // 1. Swipe Left to Close (on open drawer or backdrop)
+
         document.addEventListener('touchstart', (e) => {
             if (e.touches.length !== 1) return;
             const touch = e.touches[0];
@@ -246,7 +246,7 @@
             if (isDrawerOpen()) {
                 isTrackingDrawerSwipe = true;
             } else if (!isDesktop() && touchStartX <= 30) {
-                // 2. Edge Swipe to Open (within 30px of left screen edge)
+
                 isTrackingEdgeSwipe = true;
             }
         }, { passive: true });
@@ -257,14 +257,14 @@
             const diffX = touch.clientX - touchStartX;
             const diffY = touch.clientY - touchStartY;
 
-            // Swipe to close: user swipes left inside the open drawer
+
             if (isTrackingDrawerSwipe && diffX < -45 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
                 isTrackingDrawerSwipe = false;
                 closeDrawer();
                 return;
             }
 
-            // Edge swipe to open: user swipes right from left edge
+
             if (isTrackingEdgeSwipe && diffX > 45 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
                 isTrackingEdgeSwipe = false;
                 openDrawer();
@@ -283,7 +283,7 @@
         }, { passive: true });
     }
 
-    // ================= MOBILE AVATAR POPULATION =================
+
     function updateMobileAvatar() {
         const avatarEl = document.getElementById('mobileUserAvatar');
         if (!avatarEl) return;
@@ -312,11 +312,11 @@
         avatarEl.setAttribute('title', displayName);
     }
 
-    // ================= MAIN INITIALIZATION =================
+
     function initNavigation() {
         const { menuBtn, closeBtn, backdrop, collapseBtn, navLinks } = getElements();
 
-        // Mobile menu hamburger toggle
+
         if (menuBtn) {
             menuBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -324,7 +324,7 @@
             });
         }
 
-        // Mobile drawer close button
+
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -332,7 +332,7 @@
             });
         }
 
-        // Tap backdrop to close
+
         if (backdrop) {
             backdrop.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -340,7 +340,7 @@
             });
         }
 
-        // Desktop collapse toggle button
+
         if (collapseBtn) {
             collapseBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -348,7 +348,7 @@
             });
         }
 
-        // Automatically close drawer when any nav link is tapped on mobile
+
         if (navLinks && navLinks.length > 0) {
             navLinks.forEach((link) => {
                 link.addEventListener('click', () => {
@@ -365,7 +365,7 @@
         initTouchGestures();
         updateMobileAvatar();
 
-        // Handle viewport resize across 1024px boundary
+
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
@@ -378,7 +378,7 @@
         });
     }
 
-    // Expose helpers globally
+
     window.SkillHubNav = {
         init: initNavigation,
         openDrawer: openDrawer,

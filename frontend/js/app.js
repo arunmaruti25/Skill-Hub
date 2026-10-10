@@ -1,8 +1,8 @@
-/**
- * Skill Hub - Main Application Helpers & UI Logic (app.js)
- */
 
-// ================= PASSWORD TOGGLE HELPER =================
+
+
+
+
 function togglePassword(inputId, button) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -15,7 +15,7 @@ function togglePassword(inputId, button) {
     }
 }
 
-// ================= PROFILE MANAGEMENT =================
+
 let profileSkillsList = [];
 
 function renderProfileSkills() {
@@ -143,7 +143,7 @@ async function saveFullProfile() {
     }
 }
 
-// Image upload setup
+
 function initProfileImageHandlers() {
     const imageInput = document.getElementById("profileImageInput");
     if (!imageInput) return;
@@ -154,7 +154,7 @@ function initProfileImageHandlers() {
         const userId = user.id || user._id;
         if (!file || !userId) return;
 
-        // Preview immediately
+
         const reader = new FileReader();
         reader.onload = () => {
             const avatar = document.getElementById("profileAvatar");
@@ -213,7 +213,7 @@ async function removeProfileImage() {
     }
 }
 
-// Skill enter key event listener
+
 document.addEventListener("DOMContentLoaded", () => {
     const skillInput = document.getElementById("skillInput");
     if (skillInput) {

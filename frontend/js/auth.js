@@ -1,6 +1,6 @@
-/**
- * Skill Hub - Unified Authentication & API Client Library (auth.js)
- */
+
+
+
 
 function isCapacitorNative() {
     try {
@@ -18,7 +18,7 @@ const isNativeApp = isCapacitorNative();
 const isLocalBrowser = !isNativeApp && ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
 const API_BASE_URL = isLocalBrowser ? "http://127.0.0.1:5000" : "https://skill-hub-backend-4w35.onrender.com";
 
-// ================= AUTH SESSION HELPERS =================
+
 function getAuthToken() {
     return localStorage.getItem("token") || "";
 }
@@ -54,7 +54,7 @@ function logout() {
     window.location.href = isInsidePages ? "../index.html" : "index.html";
 }
 
-// Route Guards
+
 function requireAuth() {
     const token = getAuthToken();
     const user = getAuthUser();
@@ -78,7 +78,7 @@ function requireAdminAuth() {
     return true;
 }
 
-// ================= AUTH FETCH WRAPPER =================
+
 async function authFetch(endpoint, options = {}) {
     const token = getAuthToken();
     const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
@@ -106,7 +106,7 @@ async function authFetch(endpoint, options = {}) {
     }
 }
 
-// ================= GLOBAL TOAST HELPER =================
+
 function showToast(message, type = "info") {
     let container = document.getElementById("toast-container");
     if (!container) {
@@ -142,7 +142,7 @@ function showToast(message, type = "info") {
     }, 3500);
 }
 
-// ================= SIDEBAR BADGES & ADMIN CHECK =================
+
 const setBadge = (selector, count) => {
     document.querySelectorAll(selector).forEach(badge => {
         badge.textContent = count;
@@ -188,7 +188,7 @@ function checkAdminAccess() {
     }
 }
 
-// Auto init on DOM ready for authenticated pages
+
 document.addEventListener("DOMContentLoaded", () => {
     const isPublicPage = /index\.html$|\/$|login\.html$|register\.html$|forgot-password\.html$/.test(window.location.pathname);
     if (!isPublicPage) {

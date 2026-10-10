@@ -7,7 +7,7 @@ const { minify: minifyHtml } = require('html-minifier-terser');
 const rootDir = path.resolve(__dirname, '..');
 const outDir = path.join(rootDir, 'build', 'web');
 
-// Clean or create build/web
+
 if (fs.existsSync(outDir)) {
     fs.rmSync(outDir, { recursive: true, force: true });
 }
@@ -30,7 +30,7 @@ async function processFile(src, dest) {
         try {
             const minified = await minifyJs(content, {
                 compress: { dead_code: true, drop_debugger: true },
-                mangle: false // Preserve top-level symbol names for inline HTML handlers
+                mangle: false
             });
             fs.writeFileSync(dest, minified.code || content, 'utf8');
             console.log(`[build-web] Minified JS: ${path.relative(rootDir, src)} (${content.length} -> ${(minified.code || content).length} bytes)`);

@@ -16,7 +16,7 @@
     </style>
 </head>
 <body>
-    <!-- Mobile Sticky Top Header (< 1024px) -->
+
     <header class="mobile-top-bar" id="mobileTopBar" aria-label="Mobile Navigation Bar">
         <button type="button" class="mobile-menu-btn" id="mobileMenuBtn" aria-label="Open navigation menu" aria-controls="sidebar" aria-expanded="false">
             <i class="fa-solid fa-bars"></i>
@@ -30,10 +30,10 @@
         </a>
     </header>
 
-    <!-- Mobile Drawer Overlay / Backdrop -->
+
     <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
-    <!-- Collapsible Sidebar / Off-Canvas Drawer -->
+
     <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
         <div class="sidebar-header">
             <a href="dashboard.html" class="logo">
@@ -197,7 +197,7 @@ async function loadUserProfile(userId) {
             avatar.textContent = displayName.charAt(0).toUpperCase();
         }
 
-        // Links
+
         if (user.github) {
             const ghBadge = document.getElementById('githubBadge');
             const ghLink = document.getElementById('githubLink');
@@ -211,7 +211,7 @@ async function loadUserProfile(userId) {
             liBadge.style.display = 'block';
         }
 
-        // Skills
+
         const skillsContainer = document.getElementById('userSkills');
         if (user.skills && user.skills.length) {
             skillsContainer.innerHTML = user.skills.map(s => `<span>${s}</span>`).join('');
@@ -219,7 +219,7 @@ async function loadUserProfile(userId) {
             skillsContainer.innerHTML = '<span style="color:var(--c-text-secondary);font-size:12.5px;">No skills listed.</span>';
         }
 
-        // Actions
+
         const actionsContainer = document.getElementById('userActions');
         if (isSelf) {
             actionsContainer.innerHTML = `<a href="profile.html" class="primary-btn"><i class="fa-solid fa-pen-to-square"></i> Edit My Profile</a>`;
