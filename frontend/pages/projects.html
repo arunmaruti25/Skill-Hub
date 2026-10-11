@@ -22,9 +22,7 @@
         </a>
     </header>
 
-
     <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
-
 
     <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
         <div class="sidebar-header">
@@ -84,7 +82,6 @@
     </div>
 </main>
 
-
 <div id="createProjectModal" class="modal">
     <div class="auth-box">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
@@ -117,7 +114,6 @@ let allProjects = [];
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!requireAuth()) return;
-
 
     const urlParams = new URLSearchParams(window.location.search);
     const searchParam = urlParams.get('search');

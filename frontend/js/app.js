@@ -1,8 +1,3 @@
-
-
-
-
-
 function togglePassword(inputId, button) {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -14,7 +9,6 @@ function togglePassword(inputId, button) {
         icon.classList.toggle("fa-eye-slash", isPass);
     }
 }
-
 
 let profileSkillsList = [];
 
@@ -143,7 +137,6 @@ async function saveFullProfile() {
     }
 }
 
-
 function initProfileImageHandlers() {
     const imageInput = document.getElementById("profileImageInput");
     if (!imageInput) return;
@@ -153,7 +146,6 @@ function initProfileImageHandlers() {
         const user = getAuthUser();
         const userId = user.id || user._id;
         if (!file || !userId) return;
-
 
         const reader = new FileReader();
         reader.onload = () => {
@@ -212,7 +204,6 @@ async function removeProfileImage() {
         showToast("Network error.", "error");
     }
 }
-
 
 document.addEventListener("DOMContentLoaded", () => {
     const skillInput = document.getElementById("skillInput");

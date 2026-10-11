@@ -1,28 +1,4 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 @if "%DEBUG%"=="" @echo off
-
-
-
-
-
-
 
 if "%OS%"=="Windows_NT" setlocal
 
@@ -32,12 +8,9 @@ if "%DIRNAME%"=="" set DIRNAME=.
 set APP_BASE_NAME=%~n0
 set APP_HOME=%DIRNAME%
 
-
 for %%i in ("%APP_HOME%") do set APP_HOME=%%~fi
 
-
 set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
-
 
 if defined JAVA_HOME goto findJavaFromJavaHome
 

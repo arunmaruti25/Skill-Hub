@@ -20,7 +20,6 @@ const app = express();
 const JWT_SECRET = process.env.JWT_SECRET || "skillhub_super_secret_jwt_key_2026";
 const POP_USER = "name email profileImage profession skills bio";
 
-
 const uploadDir = path.join(__dirname, "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
 
@@ -50,7 +49,6 @@ const authLimiter = rateLimit({
     message: { message: "Too many authentication attempts. Please try again later." }
 });
 
-
 const formatUser = u => ({
     id: u._id.toString(), _id: u._id.toString(), name: u.name, email: u.email,
     profession: u.profession || "", bio: u.bio || "", location: u.location || "",
@@ -69,7 +67,6 @@ const deleteLocalAvatar = p => {
 };
 
 const parseSkills = s => Array.isArray(s) ? s : (typeof s === "string" ? s.split(",").map(x => x.trim()).filter(Boolean) : []);
-
 
 function authenticateToken(req, res, next) {
     const token = req.headers["authorization"]?.split(" ")[1];
@@ -93,7 +90,6 @@ async function requireAdmin(req, res, next) {
     if (!user || user.role !== "admin") return res.status(403).json({ message: "Admin access required." });
     next();
 }
-
 
 app.get("/", (req, res) => res.json({ status: "ok", message: "Skill Hub Backend is running!" }));
 
@@ -164,7 +160,6 @@ app.get("/api/auth/me", authenticateToken, async (req, res) => {
     res.json({ user: formatUser(user) });
 });
 
-
 app.get("/api/skills", async (req, res) => {
     try {
         const defaults = ["React", "Node.js", "Python", "JavaScript", "TypeScript", "UI/UX", "Java", "C++", "AI / ML", "Database", "MongoDB", "Express", "HTML/CSS", "Tailwind CSS", "Figma", "Docker", "DevOps", "AWS", "Flutter", "SQL"];
@@ -172,7 +167,6 @@ app.get("/api/skills", async (req, res) => {
         res.json(Array.from(new Set([...defaults, ...uSkills, ...pSkills])).filter(Boolean).sort());
     } catch (e) { res.status(500).json({ message: "Could not load skills" }); }
 });
-
 
 app.get("/api/users", optionalAuth, async (req, res) => {
     try {
@@ -200,8 +194,6 @@ const updateProfileHandler = async (req, res) => {
     try {
         const targetId = req.params.id;
         const requesterId = req.user.id || req.user._id;
-
-
 
         if (requesterId !== targetId && req.user.role !== "admin") {
             return res.status(403).json({ message: "Unauthorized profile update" });
@@ -268,7 +260,6 @@ app.get("/api/users/:id/projects", async (req, res) => {
         res.json(projects);
     } catch (e) { res.status(500).json({ message: "Could not load user projects" }); }
 });
-
 
 app.get("/api/projects", optionalAuth, async (req, res) => {
     try {
@@ -413,7 +404,6 @@ app.get("/api/projects/:projectId/requests", authenticateToken, async (req, res)
     res.json(requests);
 });
 
-
 app.get("/api/requests", authenticateToken, async (req, res) => {
     try {
         const uid = req.user.id || req.user._id;
@@ -519,7 +509,6 @@ app.delete("/api/requests/:requestId", authenticateToken, async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Server error deleting request" }); }
 });
 
-
 const getNotificationsHandler = async (req, res) => {
     const uid = req.user?.id || req.user?._id;
     if (!uid) return res.status(401).json({ message: "User ID required" });
@@ -544,9 +533,6 @@ const markAllReadHandler = async (req, res) => {
 app.put("/api/notifications/read-all", authenticateToken, markAllReadHandler);
 app.put("/api/notifications/read-all/:userId", authenticateToken, markAllReadHandler);
 
-
-
-
 app.post("/api/messages", authenticateToken, async (req, res) => {
     try {
 
@@ -559,7 +545,6 @@ app.post("/api/messages", authenticateToken, async (req, res) => {
         if (!sUser || !rUser) return res.status(404).json({ message: "User not found" });
 
         const msg = await Message.create({ sender, receiver, message: message.trim() });
-
 
         const existingNotif = await Notification.findOne({ recipient: receiver, type: "new_message", sender: sender, read: false });
         if (!existingNotif) {
@@ -580,13 +565,11 @@ app.get("/api/messages/:user1/:user2", authenticateToken, async (req, res) => {
         const { user1, user2 } = req.params;
         const currentUserId = req.user.id || req.user._id;
 
-
         if (currentUserId !== user1 && currentUserId !== user2 && req.user.role !== "admin") {
             return res.status(403).json({ message: "Access denied. You are not a participant in this conversation." });
         }
 
         const messages = await Message.find({ $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }] }).populate("sender receiver", POP_USER).sort({ createdAt: 1 });
-
 
         if (req.user.role !== "admin") {
             const otherId = currentUserId === user1 ? user2 : user1;
@@ -641,7 +624,6 @@ app.get("/api/messages/conversations", authenticateToken, getConversationsHandle
 app.get("/api/messages/user/:userId", authenticateToken, getConversationsHandler);
 app.get("/api/message-inbox/:userId", authenticateToken, getConversationsHandler);
 
-
 app.get("/api/dashboard/:userId", authenticateToken, async (req, res) => {
     try {
         const uid = req.params.userId || req.user.id;
@@ -666,7 +648,6 @@ app.get("/api/dashboard/:userId", authenticateToken, async (req, res) => {
     } catch (e) { res.status(500).json({ message: "Could not load dashboard data" }); }
 });
 
-
 app.get("/api/admin/stats", authenticateToken, requireAdmin, async (req, res) => {
     try {
         const [totalUsers, totalProjects, totalRequests, totalMessages] = await Promise.all([User.countDocuments(), Project.countDocuments(), JoinRequest.countDocuments(), Message.countDocuments()]);
@@ -680,7 +661,6 @@ app.get("/api/admin/users", authenticateToken, requireAdmin, async (req, res) =>
         res.json(users.map(formatUser));
     } catch (e) { res.status(500).json({ message: "Could not load users" }); }
 });
-
 
 app.get("/api/admin/messages/:user1/:user2", authenticateToken, requireAdmin, async (req, res) => {
     try {
@@ -710,9 +690,6 @@ app.delete("/api/admin/users/:id", authenticateToken, requireAdmin, async (req, 
         res.json({ message: "User and all associated data deleted successfully" });
     } catch (e) { res.status(500).json({ message: "Could not delete user" }); }
 });
-
-
-
 
 app.use((req, res) => res.status(404).json({ message: `Endpoint ${req.method} ${req.originalUrl} not found` }));
 app.use((err, req, res, next) => res.status(500).json({ message: "Internal server error", error: err.message }));

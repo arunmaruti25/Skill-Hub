@@ -13,7 +13,7 @@
             gap: 24px;
             flex-wrap: wrap;
         }
-    </style>
+</style>
 </head>
 <body>
 
@@ -30,9 +30,7 @@
         </a>
     </header>
 
-
     <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
-
 
     <aside class="sidebar" id="sidebar" role="navigation" aria-label="Main Navigation">
         <div class="sidebar-header">
@@ -197,7 +195,6 @@ async function loadUserProfile(userId) {
             avatar.textContent = displayName.charAt(0).toUpperCase();
         }
 
-
         if (user.github) {
             const ghBadge = document.getElementById('githubBadge');
             const ghLink = document.getElementById('githubLink');
@@ -211,14 +208,12 @@ async function loadUserProfile(userId) {
             liBadge.style.display = 'block';
         }
 
-
         const skillsContainer = document.getElementById('userSkills');
         if (user.skills && user.skills.length) {
             skillsContainer.innerHTML = user.skills.map(s => `<span>${s}</span>`).join('');
         } else {
             skillsContainer.innerHTML = '<span style="color:var(--c-text-secondary);font-size:12.5px;">No skills listed.</span>';
         }
-
 
         const actionsContainer = document.getElementById('userActions');
         if (isSelf) {

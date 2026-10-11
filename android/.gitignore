@@ -1,43 +1,28 @@
-
-
-
 *.apk
 *.aar
 *.ap_
 *.aab
 
-
 *.dex
 
-
 *.class
-
 
 bin/
 gen/
 out/
 
-
-
-
 .gradle/
 build/
 
-
 local.properties
-
 
 proguard/
 
-
 *.log
-
 
 .navigation/
 
-
 captures/
-
 
 *.iml
 .idea/workspace.xml
@@ -52,23 +37,12 @@ captures/
 
 .idea/navEditor.xml
 
-
-
-
-
-
-
 .externalNativeBuild
 .cxx/
-
-
-
-
 
 freeline.py
 freeline/
 freeline_project_description.json
-
 
 fastlane/report.xml
 fastlane/Preview.html
@@ -76,25 +50,18 @@ fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
 
-
 vcs.xml
-
 
 lint/intermediates/
 lint/generated/
 lint/outputs/
 lint/tmp/
 
-
-
 *.hprof
-
 
 capacitor-cordova-android-plugins
 
-
 app/src/main/assets/public
-
 
 app/src/main/assets/capacitor.config.json
 app/src/main/assets/capacitor.plugins.json

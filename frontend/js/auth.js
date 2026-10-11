@@ -1,7 +1,3 @@
-
-
-
-
 function isCapacitorNative() {
     try {
         const c = typeof window !== "undefined" && window.Capacitor;
@@ -17,7 +13,6 @@ function isCapacitorNative() {
 const isNativeApp = isCapacitorNative();
 const isLocalBrowser = !isNativeApp && ["localhost", "127.0.0.1", "0.0.0.0"].includes(window.location.hostname);
 const API_BASE_URL = isLocalBrowser ? "http://127.0.0.1:5000" : "https://skill-hub-backend-4w35.onrender.com";
-
 
 function getAuthToken() {
     return localStorage.getItem("token") || "";
@@ -54,7 +49,6 @@ function logout() {
     window.location.href = isInsidePages ? "../index.html" : "index.html";
 }
 
-
 function requireAuth() {
     const token = getAuthToken();
     const user = getAuthUser();
@@ -77,7 +71,6 @@ function requireAdminAuth() {
     }
     return true;
 }
-
 
 async function authFetch(endpoint, options = {}) {
     const token = getAuthToken();
@@ -105,7 +98,6 @@ async function authFetch(endpoint, options = {}) {
         throw err;
     }
 }
-
 
 function showToast(message, type = "info") {
     let container = document.getElementById("toast-container");
@@ -141,7 +133,6 @@ function showToast(message, type = "info") {
         setTimeout(() => toast.remove(), 300);
     }, 3500);
 }
-
 
 const setBadge = (selector, count) => {
     document.querySelectorAll(selector).forEach(badge => {
@@ -187,7 +178,6 @@ function checkAdminAccess() {
         adminLink.style.display = (user.role === "admin" || user.isAdmin) ? "flex" : "none";
     }
 }
-
 
 document.addEventListener("DOMContentLoaded", () => {
     const isPublicPage = /index\.html$|\/$|login\.html$|register\.html$|forgot-password\.html$/.test(window.location.pathname);

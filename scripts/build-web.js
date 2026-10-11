@@ -7,7 +7,6 @@ const { minify: minifyHtml } = require('html-minifier-terser');
 const rootDir = path.resolve(__dirname, '..');
 const outDir = path.join(rootDir, 'build', 'web');
 
-
 if (fs.existsSync(outDir)) {
     fs.rmSync(outDir, { recursive: true, force: true });
 }

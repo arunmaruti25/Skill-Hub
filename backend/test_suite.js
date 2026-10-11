@@ -15,7 +15,6 @@ console.log("\n========================================================");
 console.log("🚀 RUNNING SKILL HUB FULL SYSTEM VERIFICATION SUITE");
 console.log("========================================================\n");
 
-
 console.log("1. Testing JWT Token Operations...");
 try {
     const testSecret = "test_secret_12345";
@@ -26,7 +25,6 @@ try {
     assert(decoded.email === "test@example.com", "JWT token sign and verify decoded email correctly");
 } catch (err) { assert(false, `JWT test failed: ${err.message}`); }
 
-
 console.log("\n2. Testing Bcrypt Password Hashing & Verification...");
 try {
     const password = "mySecurePassword123";
@@ -34,7 +32,6 @@ try {
     assert(bcrypt.compareSync(password, hash), "Bcrypt password hash matches original password");
     assert(!bcrypt.compareSync("wrongPassword", hash), "Bcrypt rejects incorrect password");
 } catch (err) { assert(false, `Bcrypt test failed: ${err.message}`); }
-
 
 console.log("\n3. Testing Express App Route Definitions...");
 try {
@@ -75,7 +72,6 @@ try {
     });
 } catch (err) { assert(false, `Express app route test failed: ${err.message}`); }
 
-
 console.log("\n4. Testing Email Verification is Fully Removed...");
 try {
     const serverFile = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
@@ -99,33 +95,26 @@ try {
     assert(!pkgFile.includes("nodemailer"), "nodemailer removed from package.json dependencies");
 } catch (err) { assert(false, `Email verification removal test failed: ${err.message}`); }
 
-
 console.log("\n5. Testing Security Logic in server.js...");
 try {
     const serverFile = fs.readFileSync(path.join(__dirname, 'server.js'), 'utf8');
 
-
     assert(serverFile.includes("token: generateToken(user)") && serverFile.includes("status(201)"), "Register returns token on 201 (direct auto-login)");
-
 
     assert(serverFile.includes('const sender = req.user.id || req.user._id'), "Message sender always from JWT, not body");
     assert(serverFile.includes('const { receiver, message } = req.body') && !serverFile.includes('const { receiver, message, sender } = req.body'), "req.body.sender not used as trusted sender identity");
     assert(serverFile.includes("Access denied. You are not a participant"), "Chat IDOR: unauthorized access rejected");
-
 
     assert(serverFile.includes("/api/admin/messages/:user1/:user2"), "Admin read-only oversight endpoint exists");
     assert(!serverFile.includes('app.post("/api/admin/messages'), "No admin POST message endpoint (read-only)");
     assert(!serverFile.includes('app.put("/api/admin/messages'), "No admin PUT message endpoint (read-only)");
     assert(!serverFile.includes('app.delete("/api/admin/messages'), "No admin DELETE message endpoint (read-only)");
 
-
     assert(serverFile.includes('select("-password")'), "Password excluded from user queries");
-
 
     assert(serverFile.includes("const uid = req.user?.id || req.user?._id"), "Conversations handler derives uid from JWT not URL params");
 
 } catch (err) { assert(false, `Security logic test failed: ${err.message}`); }
-
 
 console.log("\n6. Testing Frontend HTML Files & Script Links...");
 const frontendDir = path.join(__dirname, '..', 'frontend');
@@ -146,7 +135,6 @@ htmlFiles.forEach(file => {
     assert(fs.existsSync(path.join(frontendDir, 'css', 'style.css')), `${filename}: css/style.css exists`);
 });
 
-
 console.log("\n7. Testing Auth Flow Pages...");
 
 assert(!fs.existsSync(path.join(pagesDir, 'verify-email.html')), "verify-email.html page removed");
@@ -161,7 +149,6 @@ assert(!registerPage.includes('verifyNotice'), "register.html: verifyNotice elem
 assert(registerPage.includes('setAuthSession(result.token'), "register.html: auto-login on successful registration");
 assert(!registerPage.includes('resendVerification'), "register.html: resendVerification function removed");
 
-
 console.log("\n8. Testing CSS Variable Palette...");
 try {
     const cssContent = fs.readFileSync(path.join(frontendDir, 'css', 'style.css'), 'utf8');
@@ -170,7 +157,6 @@ try {
         assert(cssContent.toUpperCase().includes(color.toUpperCase()), `CSS includes required palette color: ${color}`);
     });
 } catch (err) { assert(false, `CSS test failed: ${err.message}`); }
-
 
 console.log("\n9. Testing User Model Schema...");
 try {

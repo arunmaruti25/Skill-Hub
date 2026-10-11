@@ -1,9 +1,3 @@
-
-
-
-
-
-
 (function () {
     'use strict';
 
@@ -12,7 +6,6 @@
 
     let historyStatePushed = false;
     let previousActiveElement = null;
-
 
     function getElements() {
         return {
@@ -26,7 +19,6 @@
             navLinks: document.querySelectorAll('#sidebar nav a, #sidebar .sidebar-bottom a')
         };
     }
-
 
     function isDesktop() {
         return window.innerWidth >= BREAKPOINT_DESKTOP;
@@ -78,7 +70,6 @@
         }
     }
 
-
     function isDrawerOpen() {
         return document.body.classList.contains('drawer-open');
     }
@@ -98,14 +89,12 @@
             backdrop.setAttribute('aria-hidden', 'false');
         }
 
-
         if (!historyStatePushed) {
             try {
                 window.history.pushState({ drawerOpen: true }, '');
                 historyStatePushed = true;
             } catch (e) {}
         }
-
 
         requestAnimationFrame(() => {
             if (closeBtn && typeof closeBtn.focus === 'function') {
@@ -131,7 +120,6 @@
             backdrop.setAttribute('aria-hidden', 'true');
         }
 
-
         if (popHistory && historyStatePushed) {
             historyStatePushed = false;
             try {
@@ -142,7 +130,6 @@
         } else {
             historyStatePushed = false;
         }
-
 
         if (previousActiveElement && typeof previousActiveElement.focus === 'function') {
             previousActiveElement.focus();
@@ -160,18 +147,15 @@
         }
     }
 
-
     function initKeyboardAccessibility() {
         document.addEventListener('keydown', (e) => {
             if (!isDrawerOpen()) return;
-
 
             if (e.key === 'Escape' || e.key === 'Esc') {
                 e.preventDefault();
                 closeDrawer();
                 return;
             }
-
 
             if (e.key === 'Tab') {
                 const { sidebar } = getElements();
@@ -200,7 +184,6 @@
         });
     }
 
-
     function initBackButton() {
 
         try {
@@ -220,7 +203,6 @@
             console.warn('Capacitor backButton setup note:', err);
         }
 
-
         window.addEventListener('popstate', (e) => {
             if (isDrawerOpen()) {
 
@@ -229,13 +211,11 @@
         });
     }
 
-
     function initTouchGestures() {
         let touchStartX = 0;
         let touchStartY = 0;
         let isTrackingDrawerSwipe = false;
         let isTrackingEdgeSwipe = false;
-
 
         document.addEventListener('touchstart', (e) => {
             if (e.touches.length !== 1) return;
@@ -257,13 +237,11 @@
             const diffX = touch.clientX - touchStartX;
             const diffY = touch.clientY - touchStartY;
 
-
             if (isTrackingDrawerSwipe && diffX < -45 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
                 isTrackingDrawerSwipe = false;
                 closeDrawer();
                 return;
             }
-
 
             if (isTrackingEdgeSwipe && diffX > 45 && Math.abs(diffX) > Math.abs(diffY) * 1.2) {
                 isTrackingEdgeSwipe = false;
@@ -282,7 +260,6 @@
             isTrackingEdgeSwipe = false;
         }, { passive: true });
     }
-
 
     function updateMobileAvatar() {
         const avatarEl = document.getElementById('mobileUserAvatar');
@@ -312,10 +289,8 @@
         avatarEl.setAttribute('title', displayName);
     }
 
-
     function initNavigation() {
         const { menuBtn, closeBtn, backdrop, collapseBtn, navLinks } = getElements();
-
 
         if (menuBtn) {
             menuBtn.addEventListener('click', (e) => {
@@ -324,14 +299,12 @@
             });
         }
 
-
         if (closeBtn) {
             closeBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 closeDrawer();
             });
         }
-
 
         if (backdrop) {
             backdrop.addEventListener('click', (e) => {
@@ -340,14 +313,12 @@
             });
         }
 
-
         if (collapseBtn) {
             collapseBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 toggleDesktopCollapse();
             });
         }
-
 
         if (navLinks && navLinks.length > 0) {
             navLinks.forEach((link) => {
@@ -365,7 +336,6 @@
         initTouchGestures();
         updateMobileAvatar();
 
-
         let resizeTimer;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimer);
@@ -377,7 +347,6 @@
             }, 100);
         });
     }
-
 
     window.SkillHubNav = {
         init: initNavigation,
